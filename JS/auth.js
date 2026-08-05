@@ -88,6 +88,7 @@ loginForm.addEventListener("submit", async (event) => {
     .from("profiles")
     .upsert({
       id: user.id,
+      email: user.email,
       full_name: metadata.full_name,
       phone: metadata.phone,
       department: metadata.department,
