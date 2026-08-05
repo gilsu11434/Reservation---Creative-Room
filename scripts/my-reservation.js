@@ -89,6 +89,10 @@ function renderReservations() {
       const members =
         reservation.reservation_members ?? [];
 
+      const submittedCertificateCount = members.filter(
+        (member) => Boolean(member.safety_certificate_path)
+      ).length;
+
       const reports =
         reservation.usage_reports ?? [];
 
@@ -120,7 +124,7 @@ function renderReservations() {
             </div>
             <div class="meta-item">
               <span>인원 · 수료증</span>
-              <strong>${reservation.headcount}명 · ${members.length}/${reservation.headcount}건</strong>
+              <strong>${reservation.headcount}명 · ${submittedCertificateCount}/${reservation.headcount}건</strong>
             </div>
           </div>
 
@@ -138,12 +142,54 @@ function renderReservations() {
             <section class="workflow-panel">
               <h3>참여자 수료증</h3>
               <p>PDF, JPG, PNG · 최대 10MB</p>
-              <form class="member-form" data-id="${reservation.id}">
-                <input name="memberName" placeholder="참여자 이름" aria-label="참여자 이름" required>
-                <input name="studentId" placeholder="학번" aria-label="참여자 학번" required>
-                <input name="certificate" type="file" accept=".pdf,.jpg,.jpeg,.png" aria-label="수료증 파일" required>
-                <button type="submit">수료증 제출</button>
-              </form>
+              ${
+                members.length === 0
+                  ? `
+                    <form class="member-form" data-id="${reservation.id}">
+                      <input name="memberName" placeholder="참여자 이름" aria-label="참여자 이름" required>
+                      <input name="studentId" placeholder="학번" aria-label="참여자 학번" required>
+                      <input name="certificate" type="file" accept=".pdf,.jpg,.jpeg,.png" aria-label="수료증 파일" required>
+                      <button type="submit">수료증 제출</button>
+                    </form>
+                  `
+                  : `
+                    <div class="participant-upload-list">
+                      ${members.map((member) => `
+                        <div class="participant-upload-row">
+                          <div class="participant-upload-name">
+                            <strong>${escapeHtml(member.member_name)}</strong>
+                            <span>${escapeHtml(member.student_id)}</span>
+                          </div>
+                          ${
+                            member.safety_certificate_path
+                              ? `
+                                <span class="status-badge status-ready">
+                                  ${member.certificate_verified ? "확인 완료" : "제출 완료"}
+                                </span>
+                              `
+                              : `
+                                <form
+                                  class="certificate-form"
+                                  data-id="${reservation.id}"
+                                  data-member-id="${member.id}"
+                                  data-student-id="${escapeHtml(member.student_id)}"
+                                >
+                                  <input
+                                    name="certificate"
+                                    type="file"
+                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    aria-label="${escapeHtml(member.member_name)} 수료증 파일"
+                                    required
+                                  >
+                                  <button type="submit">수료증 제출</button>
+                                </form>
+                              `
+                          }
+                        </div>
+                      `).join("")}
+                    </div>
+                  `
+              }
             </section>
 
             <section class="workflow-panel">
@@ -283,6 +329,62 @@ function attachEventListeners() {
             safety_submitted_at:
               new Date().toISOString()
           });
+
+        if (memberError) {
+          await supabase.storage
+            .from("safety-certificates")
+            .remove([path]);
+
+          alert(memberError.message);
+          return;
+        }
+
+        alert("수료증을 제출했습니다.");
+        await loadReservations();
+      });
+    });
+
+  document
+    .querySelectorAll(".certificate-form")
+    .forEach((form) => {
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const reservationId = form.dataset.id;
+        const memberId = form.dataset.memberId;
+        const studentId = form.dataset.studentId;
+        const file = form.certificate.files[0];
+
+        try {
+          validateFile(file);
+        } catch (error) {
+          alert(error.message);
+          return;
+        }
+
+        const extension = getExtension(file.name);
+        const path =
+          `${currentUser.id}/` +
+          `${reservationId}/` +
+          `${studentId}-${Date.now()}.${extension}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("safety-certificates")
+          .upload(path, file, { upsert: false });
+
+        if (uploadError) {
+          alert(uploadError.message);
+          return;
+        }
+
+        const { error: memberError } = await supabase
+          .from("reservation_members")
+          .update({
+            safety_certificate_path: path,
+            safety_submitted_at: new Date().toISOString()
+          })
+          .eq("id", memberId)
+          .eq("reservation_id", reservationId);
 
         if (memberError) {
           await supabase.storage
