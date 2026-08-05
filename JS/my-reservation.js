@@ -50,13 +50,37 @@ function formatDate(value) {
   });
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function getStatusLabel(status) {
+  const labels = {
+    documents_pending: "수료증 확인 대기",
+    ready: "이용 가능",
+    completed: "이용 완료",
+    cancelled: "취소"
+  };
+
+  return labels[status] ?? status;
+}
+
 function renderReservations() {
   const container =
     document.getElementById("reservation-list");
 
   if (reservations.length === 0) {
     container.innerHTML =
-      "<p>등록된 예약이 없습니다.</p>";
+      `<section class="card">
+        <h2>아직 예약이 없습니다</h2>
+        <p class="muted">새 예약을 만들면 이곳에서 진행 상태를 확인할 수 있습니다.</p>
+        <a class="button" href="./reservation.html">첫 예약 만들기</a>
+      </section>`;
     return;
   }
 
@@ -68,118 +92,86 @@ function renderReservations() {
       const reports =
         reservation.usage_reports ?? [];
 
+      const status = escapeHtml(reservation.status);
+
       return `
-        <section class="card">
-          <h2>
-            ${reservation.teams?.team_name ?? "팀"}
-          </h2>
+        <section class="card reservation-card">
+          <div class="reservation-heading">
+            <div>
+              <p class="eyebrow">Reservation</p>
+              <h2>${escapeHtml(reservation.teams?.team_name ?? "팀")}</h2>
+            </div>
+            <span class="status-badge status-${status}">
+              ${escapeHtml(getStatusLabel(reservation.status))}
+            </span>
+          </div>
 
-          <p>
-            ${formatDate(reservation.start_at)}
-            ~
-            ${formatDate(reservation.end_at)}
-          </p>
+          <div class="reservation-meta">
+            <div class="meta-item">
+              <span>이용 시간</span>
+              <strong>
+                ${formatDate(reservation.start_at)}<br>
+                ${formatDate(reservation.end_at)}
+              </strong>
+            </div>
+            <div class="meta-item">
+              <span>사용 목적</span>
+              <strong>${escapeHtml(reservation.purpose)}</strong>
+            </div>
+            <div class="meta-item">
+              <span>인원 · 수료증</span>
+              <strong>${reservation.headcount}명 · ${members.length}/${reservation.headcount}건</strong>
+            </div>
+          </div>
 
-          <p>목적: ${reservation.purpose}</p>
-          <p>인원: ${reservation.headcount}명</p>
-          <p>상태: ${reservation.status}</p>
-
-          <p>
-            수료증 제출:
-            ${members.length}/${reservation.headcount}
-          </p>
-
-          <button
-            class="cancel-button"
-            data-id="${reservation.id}"
-          >
-            예약 취소
-          </button>
-
-          <h3>참여자 수료증 제출</h3>
-
-          <form
-            class="member-form"
-            data-id="${reservation.id}"
-          >
-            <input
-              name="memberName"
-              placeholder="참여자 이름"
-              required
+          <div class="reservation-actions">
+            <button
+              type="button"
+              class="cancel-button"
+              data-id="${reservation.id}"
             >
-
-            <input
-              name="studentId"
-              placeholder="학번"
-              required
-            >
-
-            <input
-              name="certificate"
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
-              required
-            >
-
-            <button type="submit">
-              수료증 제출
+              예약 취소
             </button>
-          </form>
+          </div>
 
-          <h3>연장 신청</h3>
+          <div class="workflow-grid">
+            <section class="workflow-panel">
+              <h3>참여자 수료증</h3>
+              <p>PDF, JPG, PNG · 최대 10MB</p>
+              <form class="member-form" data-id="${reservation.id}">
+                <input name="memberName" placeholder="참여자 이름" aria-label="참여자 이름" required>
+                <input name="studentId" placeholder="학번" aria-label="참여자 학번" required>
+                <input name="certificate" type="file" accept=".pdf,.jpg,.jpeg,.png" aria-label="수료증 파일" required>
+                <button type="submit">수료증 제출</button>
+              </form>
+            </section>
 
-          <form
-            class="extension-form"
-            data-id="${reservation.id}"
-          >
-            <input
-              name="minutes"
-              type="number"
-              min="1"
-              max="120"
-              placeholder="연장시간(분)"
-              required
-            >
+            <section class="workflow-panel">
+              <h3>연장 신청</h3>
+              <p>필요한 연장 시간과 사유를 입력하세요.</p>
+              <form class="extension-form" data-id="${reservation.id}">
+                <input name="minutes" type="number" min="1" max="120" placeholder="연장시간(분)" aria-label="연장시간" required>
+                <input name="reason" placeholder="연장 사유" aria-label="연장 사유" required>
+                <button type="submit">연장 신청</button>
+              </form>
+            </section>
 
-            <input
-              name="reason"
-              placeholder="연장 사유"
-              required
-            >
-
-            <button type="submit">
-              연장 신청
-            </button>
-          </form>
-
-          <h3>이용확인서 제출</h3>
-
-          ${
-            reports.length > 0
-              ? "<p>이용확인서 제출 완료</p>"
-              : `
-                <form
-                  class="report-form"
-                  data-id="${reservation.id}"
-                >
-                  <input
-                    name="report"
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    required
-                  >
-
-                  <textarea
-                    name="notes"
-                    placeholder="특이사항"
-                  ></textarea>
-
-                  <button type="submit">
-                    이용확인서 제출
-                  </button>
-                </form>
-              `
-          }
+            <section class="workflow-panel">
+              <h3>이용확인서</h3>
+              <p>이용을 마친 후 확인서를 제출하세요.</p>
+              ${
+                reports.length > 0
+                  ? `<div class="message">이용확인서 제출 완료</div>`
+                  : `
+                    <form class="report-form" data-id="${reservation.id}">
+                      <input name="report" type="file" accept=".pdf,.jpg,.jpeg,.png" aria-label="이용확인서 파일" required>
+                      <textarea name="notes" placeholder="특이사항" aria-label="특이사항"></textarea>
+                      <button type="submit">이용확인서 제출</button>
+                    </form>
+                  `
+              }
+            </section>
+          </div>
         </section>
       `;
     })

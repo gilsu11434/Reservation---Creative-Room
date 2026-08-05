@@ -1,7 +1,6 @@
 import {
   supabase,
   getCurrentUser,
-  checkApproved,
   logout
 } from "./config.js";
 
@@ -18,15 +17,6 @@ async function initialize() {
   currentUser = await getCurrentUser();
 
   if (!currentUser) {
-    return;
-  }
-
-  const permission =
-    await checkApproved(currentUser.id);
-
-  if (!permission.is_approved) {
-    alert("관리자 승인이 필요합니다.");
-    await logout();
     return;
   }
 
@@ -175,7 +165,18 @@ async function loadBookedSlots() {
           timeZone: "Asia/Seoul"
         });
 
-      return `<p>${start} ~ ${end}</p>`;
+      const startParts = start.split(" ");
+      const endParts = end.split(" ");
+
+      return `
+        <div class="booked-slot">
+          <strong>${startParts.slice(0, 3).join(" ")}</strong>
+          <span>
+            ${startParts.slice(3).join(" ")} ~
+            ${endParts.slice(3).join(" ")}
+          </span>
+        </div>
+      `;
     })
     .join("");
 }
