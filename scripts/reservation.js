@@ -13,8 +13,17 @@ const headcountButtons = document.querySelectorAll("[data-headcount]");
 const participantsSection = document.getElementById("participants-section");
 const participantFields = document.getElementById("participant-fields");
 const participantSummary = document.getElementById("participant-summary");
-const startTimeSelect = document.getElementById("start-time");
-const endTimeSelect = document.getElementById("end-time");
+const reservationDateInput = document.getElementById("reservation-date");
+const startTimeInput = document.getElementById("start-time");
+const endTimeInput = document.getElementById("end-time");
+const timeSlotButtons = document.querySelectorAll("[data-time-hour]");
+const timeSlotMessage = document.getElementById("time-slot-message");
+
+let bookedSlots = [];
+let bookedSlotsLoaded = false;
+let bookedSlotsLoadFailed = false;
+let selectedStartHour = null;
+let selectedEndHour = null;
 
 document
   .getElementById("logout-button")
@@ -36,7 +45,18 @@ document
   .getElementById("student-id")
   .addEventListener("input", updatePrimaryParticipant);
 
-startTimeSelect.addEventListener("change", updateEndTimeOptions);
+reservationDateInput.addEventListener("change", () => {
+  resetSelectedTimeSlots();
+  updateTimeSlotAvailability();
+});
+
+timeSlotButtons.forEach((button) => {
+  button.setAttribute("aria-pressed", "false");
+
+  button.addEventListener("click", () => {
+    selectTimeSlot(Number(button.dataset.timeHour));
+  });
+});
 
 async function initialize() {
   currentUser = await getCurrentUser();
@@ -51,9 +71,10 @@ async function initialize() {
     return;
   }
 
+  setDateLimits();
+  updateTimeSlotAvailability();
   await ensureReservationTeam(profile);
   await loadBookedSlots();
-  setDateLimits();
 }
 
 async function loadProfile() {
@@ -267,36 +288,237 @@ function formatHour(hour) {
   return `${String(hour).padStart(2, "0")}:00`;
 }
 
-function updateEndTimeOptions() {
-  const startHour = Number(startTimeSelect.value.slice(0, 2));
+function getDateWeekday(dateValue) {
+  const [year, month, day] = dateValue.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+}
 
-  endTimeSelect.innerHTML = "";
+function getTimeSlotStatus(dateValue, hour) {
+  if (!dateValue) {
+    return { available: false, label: "날짜 선택 필요" };
+  }
 
-  if (!startTimeSelect.value) {
-    const option = document.createElement("option");
-    option.value = "";
-    option.textContent = "시작시간을 먼저 선택하세요";
-    endTimeSelect.appendChild(option);
-    endTimeSelect.disabled = true;
+  if (!bookedSlotsLoaded) {
+    return {
+      available: false,
+      label: bookedSlotsLoadFailed ? "예약 확인 실패" : "예약 확인 중"
+    };
+  }
+
+  const weekday = getDateWeekday(dateValue);
+
+  if (weekday === 0 || weekday === 6) {
+    return { available: false, label: "주말 이용 불가" };
+  }
+
+  const slotStart = new Date(
+    `${dateValue}T${formatHour(hour)}:00+09:00`
+  );
+  const slotEnd = new Date(
+    `${dateValue}T${formatHour(hour + 1)}:00+09:00`
+  );
+  const minimumStartTime = Date.now() + 24 * 60 * 60 * 1000;
+
+  if (slotStart.getTime() < minimumStartTime) {
+    return { available: false, label: "예약 마감" };
+  }
+
+  const isBooked = bookedSlots.some((slot) => {
+    const bookedStart = new Date(slot.start_at).getTime();
+    const bookedEnd = new Date(
+      slot.effective_end_at ?? slot.end_at
+    ).getTime();
+
+    return (
+      bookedStart < slotEnd.getTime() &&
+      bookedEnd > slotStart.getTime()
+    );
+  });
+
+  if (isBooked) {
+    return { available: false, label: "예약됨" };
+  }
+
+  return { available: true, label: "예약 가능" };
+}
+
+function getTimeRangeStatus(dateValue, startHour, endHour) {
+  for (let hour = startHour; hour < endHour; hour += 1) {
+    const status = getTimeSlotStatus(dateValue, hour);
+
+    if (!status.available) {
+      return status;
+    }
+  }
+
+  return { available: true, label: "종료 가능" };
+}
+
+function resetSelectedTimeSlots() {
+  selectedStartHour = null;
+  selectedEndHour = null;
+  syncSelectedTimeSlots();
+}
+
+function selectTimeSlot(hour) {
+  const clickedButton = document.querySelector(
+    `[data-time-hour="${hour}"]`
+  );
+
+  if (!clickedButton || clickedButton.disabled) {
     return;
   }
 
-  const placeholder = document.createElement("option");
-  placeholder.value = "";
-  placeholder.textContent = "종료시간을 선택하세요";
-  endTimeSelect.appendChild(placeholder);
+  if (selectedStartHour === null) {
+    selectedStartHour = hour;
+    selectedEndHour = null;
+  } else if (selectedEndHour === null) {
+    if (hour === selectedStartHour) {
+      selectedStartHour = null;
+    } else {
+      selectedEndHour = hour;
+    }
+  } else {
+    selectedStartHour = null;
+    selectedEndHour = null;
+  }
 
-  [startHour + 1, startHour + 2]
-    .filter((hour) => hour <= 18)
-    .forEach((hour) => {
-      const value = formatHour(hour);
-      const option = document.createElement("option");
-      option.value = value;
-      option.textContent = value;
-      endTimeSelect.appendChild(option);
-    });
+  updateTimeSlotAvailability();
+}
 
-  endTimeSelect.disabled = false;
+function syncSelectedTimeSlots() {
+  timeSlotButtons.forEach((button) => {
+    const hour = Number(button.dataset.timeHour);
+    const selected =
+      hour === selectedStartHour || hour === selectedEndHour;
+
+    button.classList.toggle("selected", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
+
+  timeSlotMessage.classList.remove("success", "error");
+
+  if (selectedStartHour === null) {
+    startTimeInput.value = "";
+    endTimeInput.value = "";
+
+    if (!reservationDateInput.value) {
+      timeSlotMessage.textContent = "예약 날짜를 먼저 선택해 주세요.";
+    } else if (bookedSlotsLoadFailed) {
+      timeSlotMessage.textContent =
+        "예약 현황을 불러오지 못했습니다. 페이지를 새로고침해 주세요.";
+      timeSlotMessage.classList.add("error");
+    } else if (!bookedSlotsLoaded) {
+      timeSlotMessage.textContent = "예약 현황을 확인하고 있습니다.";
+    } else {
+      timeSlotMessage.textContent = "시작 시각을 선택해 주세요.";
+    }
+
+    return;
+  }
+
+  startTimeInput.value = formatHour(selectedStartHour);
+
+  if (selectedEndHour === null) {
+    endTimeInput.value = "";
+    timeSlotMessage.textContent =
+      `${formatHour(selectedStartHour)} 시작 시각 선택됨 · ` +
+      "종료 시각을 선택해 주세요.";
+    timeSlotMessage.classList.add("success");
+    return;
+  }
+
+  endTimeInput.value = formatHour(selectedEndHour);
+  timeSlotMessage.textContent =
+    `${formatHour(selectedStartHour)} ~ ${formatHour(selectedEndHour)} ` +
+    `선택됨 (${selectedEndHour - selectedStartHour}시간)`;
+  timeSlotMessage.classList.add("success");
+}
+
+function updateTimeSlotAvailability() {
+  const dateValue = reservationDateInput.value;
+
+  if (selectedStartHour !== null) {
+    const startStatus = getTimeSlotStatus(dateValue, selectedStartHour);
+    const rangeStatus = selectedEndHour === null
+      ? startStatus
+      : getTimeRangeStatus(
+        dateValue,
+        selectedStartHour,
+        selectedEndHour
+      );
+
+    if (!startStatus.available || !rangeStatus.available) {
+      selectedStartHour = null;
+      selectedEndHour = null;
+    }
+  }
+
+  timeSlotButtons.forEach((button) => {
+    const hour = Number(button.dataset.timeHour);
+    const statusText = button.querySelector("small");
+    let status;
+
+    if (selectedStartHour === null) {
+      const generalStatus = getTimeSlotStatus(
+        dateValue,
+        Math.min(hour, 17)
+      );
+
+      if (!generalStatus.available && generalStatus.label !== "예약됨") {
+        status = generalStatus;
+      } else if (hour === 18) {
+        status = { available: false, label: "종료만 가능" };
+      } else {
+        status = getTimeSlotStatus(dateValue, hour);
+      }
+    } else if (selectedEndHour === null) {
+      if (hour === selectedStartHour) {
+        status = { available: true, label: "시작 시각" };
+      } else if (
+        hour > selectedStartHour &&
+        hour <= Math.min(selectedStartHour + 2, 18)
+      ) {
+        status = getTimeRangeStatus(
+          dateValue,
+          selectedStartHour,
+          hour
+        );
+      } else {
+        status = { available: false, label: "선택 불가" };
+      }
+    } else if (
+      hour === selectedStartHour ||
+      hour === selectedEndHour
+    ) {
+      status = {
+        available: true,
+        label: hour === selectedStartHour ? "시작 시각" : "종료 시각"
+      };
+    } else {
+      status = { available: false, label: "선택 완료" };
+    }
+
+    button.disabled = !status.available;
+    button.title = status.label;
+    button.setAttribute("aria-disabled", String(!status.available));
+    statusText.textContent = status.label;
+  });
+
+  syncSelectedTimeSlots();
+
+  if (
+    dateValue &&
+    bookedSlotsLoaded &&
+    selectedStartHour === null &&
+    Array.from(timeSlotButtons)
+      .filter((button) => Number(button.dataset.timeHour) < 18)
+      .every((button) => button.disabled)
+  ) {
+    timeSlotMessage.textContent =
+      "선택한 날짜에는 예약 가능한 시간이 없습니다.";
+    timeSlotMessage.classList.add("error");
+  }
 }
 
 async function ensureReservationTeam(profile) {
@@ -339,20 +561,21 @@ async function ensureReservationTeam(profile) {
 }
 
 function setDateLimits() {
-  const dateInput =
-    document.getElementById("reservation-date");
-
   const minDate = new Date();
   minDate.setDate(minDate.getDate() + 1);
 
   const maxDate = new Date();
   maxDate.setDate(maxDate.getDate() + 7);
 
-  dateInput.min =
-    minDate.toISOString().slice(0, 10);
+  const toLocalDateValue = (date) => {
+    const localDate = new Date(
+      date.getTime() - date.getTimezoneOffset() * 60 * 1000
+    );
+    return localDate.toISOString().slice(0, 10);
+  };
 
-  dateInput.max =
-    maxDate.toISOString().slice(0, 10);
+  reservationDateInput.min = toLocalDateValue(minDate);
+  reservationDateInput.max = toLocalDateValue(maxDate);
 }
 
 async function loadBookedSlots() {
@@ -373,23 +596,32 @@ async function loadBookedSlots() {
     document.getElementById("booked-slots");
 
   if (error) {
+    bookedSlots = [];
+    bookedSlotsLoaded = false;
+    bookedSlotsLoadFailed = true;
     container.textContent = error.message;
+    updateTimeSlotAvailability();
     return;
   }
 
-  if (data.length === 0) {
+  bookedSlots = data ?? [];
+  bookedSlotsLoaded = true;
+  bookedSlotsLoadFailed = false;
+  updateTimeSlotAvailability();
+
+  if (bookedSlots.length === 0) {
     container.textContent = "현재 예약된 시간이 없습니다.";
     return;
   }
 
-  container.innerHTML = data
+  container.innerHTML = bookedSlots
     .map((slot) => {
       const start = new Date(slot.start_at)
         .toLocaleString("ko-KR", {
           timeZone: "Asia/Seoul"
         });
 
-      const end = new Date(slot.end_at)
+      const end = new Date(slot.effective_end_at ?? slot.end_at)
         .toLocaleString("ko-KR", {
           timeZone: "Asia/Seoul"
         });
@@ -443,6 +675,13 @@ document
 
     const endTime =
       document.getElementById("end-time").value;
+
+    if (!date || !startTime || !endTime) {
+      message.textContent = "예약 날짜와 이용 시간을 선택해 주세요.";
+      message.classList.remove("success");
+      message.classList.add("error");
+      return;
+    }
 
     const startAt =
       new Date(
@@ -541,7 +780,8 @@ document
 
     event.target.reset();
     resetHeadcountPicker();
-    updateEndTimeOptions();
+    resetSelectedTimeSlots();
+    updateTimeSlotAvailability();
 
     if (currentProfile) {
       fillProfile(currentProfile);
