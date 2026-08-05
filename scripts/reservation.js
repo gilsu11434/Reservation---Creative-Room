@@ -14,9 +14,6 @@ const participantsSection = document.getElementById("participants-section");
 const participantFields = document.getElementById("participant-fields");
 const participantSummary = document.getElementById("participant-summary");
 const reservationDateInput = document.getElementById("reservation-date");
-const reservationDatePicker = document.getElementById(
-  "reservation-date-picker"
-);
 const startTimeInput = document.getElementById("start-time");
 const endTimeInput = document.getElementById("end-time");
 const startTimeButtons = document.querySelectorAll("[data-start-hour]");
@@ -51,6 +48,26 @@ document
 document
   .getElementById("student-id")
   .addEventListener("input", updatePrimaryParticipant);
+
+reservationDateInput.addEventListener("change", () => {
+  const dateValue = reservationDateInput.value;
+  reservationDateInput.setCustomValidity("");
+
+  if (dateValue) {
+    const weekday = getDateWeekday(dateValue);
+
+    if (weekday === 0 || weekday === 6) {
+      reservationDateInput.value = "";
+      reservationDateInput.setCustomValidity(
+        "토요일과 일요일은 선택할 수 없습니다."
+      );
+      reservationDateInput.reportValidity();
+    }
+  }
+
+  resetSelectedTimeSlots();
+  updateTimeSlotAvailability();
+});
 
 startTimeButtons.forEach((button) => {
   button.setAttribute("aria-pressed", "false");
@@ -592,68 +609,15 @@ function toLocalDateValue(date) {
   return localDate.toISOString().slice(0, 10);
 }
 
-function selectReservationDate(dateValue) {
-  const selectedButton = document.querySelector(
-    `[data-reservation-date="${dateValue}"]`
-  );
-
-  if (!selectedButton || selectedButton.disabled) {
-    return;
-  }
-
-  reservationDateInput.value = dateValue;
-
-  reservationDatePicker
-    .querySelectorAll("[data-reservation-date]")
-    .forEach((button) => {
-      const selected = button.dataset.reservationDate === dateValue;
-      button.classList.toggle("selected", selected);
-      button.setAttribute("aria-pressed", String(selected));
-    });
-
-  resetSelectedTimeSlots();
-  updateTimeSlotAvailability();
-}
-
 function setDateLimits() {
-  const weekdayNames = [
-    "일요일",
-    "월요일",
-    "화요일",
-    "수요일",
-    "목요일",
-    "금요일",
-    "토요일"
-  ];
+  const minDate = new Date();
+  minDate.setDate(minDate.getDate() + 1);
 
-  reservationDatePicker.innerHTML = "";
+  const maxDate = new Date();
+  maxDate.setDate(maxDate.getDate() + 7);
 
-  for (let offset = 1; offset <= 7; offset += 1) {
-    const date = new Date();
-    date.setHours(12, 0, 0, 0);
-    date.setDate(date.getDate() + offset);
-
-    const dateValue = toLocalDateValue(date);
-    const weekday = date.getDay();
-    const weekend = weekday === 0 || weekday === 6;
-    const button = document.createElement("button");
-
-    button.type = "button";
-    button.dataset.reservationDate = dateValue;
-    button.disabled = weekend;
-    button.setAttribute("aria-disabled", String(weekend));
-    button.setAttribute("aria-pressed", "false");
-    button.innerHTML = `
-      <span>${date.getMonth() + 1}월 ${date.getDate()}일</span>
-      <small>${weekdayNames[weekday]}${weekend ? " · 이용 불가" : ""}</small>
-    `;
-
-    button.addEventListener("click", () => {
-      selectReservationDate(dateValue);
-    });
-
-    reservationDatePicker.appendChild(button);
-  }
+  reservationDateInput.min = toLocalDateValue(minDate);
+  reservationDateInput.max = toLocalDateValue(maxDate);
 }
 
 async function loadBookedSlots() {
