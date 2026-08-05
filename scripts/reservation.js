@@ -14,9 +14,16 @@ const participantsSection = document.getElementById("participants-section");
 const participantFields = document.getElementById("participant-fields");
 const participantSummary = document.getElementById("participant-summary");
 const reservationDateInput = document.getElementById("reservation-date");
+const reservationDatePicker = document.getElementById(
+  "reservation-date-picker"
+);
 const startTimeInput = document.getElementById("start-time");
 const endTimeInput = document.getElementById("end-time");
-const timeSlotButtons = document.querySelectorAll("[data-time-hour]");
+const startTimeButtons = document.querySelectorAll("[data-start-hour]");
+const endTimeButtons = document.querySelectorAll("[data-end-hour]");
+const selectedTimeSummary = document.getElementById(
+  "selected-time-summary"
+);
 const timeSlotMessage = document.getElementById("time-slot-message");
 
 let bookedSlots = [];
@@ -45,16 +52,19 @@ document
   .getElementById("student-id")
   .addEventListener("input", updatePrimaryParticipant);
 
-reservationDateInput.addEventListener("change", () => {
-  resetSelectedTimeSlots();
-  updateTimeSlotAvailability();
-});
-
-timeSlotButtons.forEach((button) => {
+startTimeButtons.forEach((button) => {
   button.setAttribute("aria-pressed", "false");
 
   button.addEventListener("click", () => {
-    selectTimeSlot(Number(button.dataset.timeHour));
+    selectStartTime(Number(button.dataset.startHour));
+  });
+});
+
+endTimeButtons.forEach((button) => {
+  button.setAttribute("aria-pressed", "false");
+
+  button.addEventListener("click", () => {
+    selectEndTime(Number(button.dataset.endHour));
   });
 });
 
@@ -360,47 +370,61 @@ function resetSelectedTimeSlots() {
   syncSelectedTimeSlots();
 }
 
-function selectTimeSlot(hour) {
+function selectStartTime(hour) {
   const clickedButton = document.querySelector(
-    `[data-time-hour="${hour}"]`
+    `[data-start-hour="${hour}"]`
   );
 
   if (!clickedButton || clickedButton.disabled) {
     return;
   }
 
-  if (selectedStartHour === null) {
-    selectedStartHour = hour;
-    selectedEndHour = null;
-  } else if (selectedEndHour === null) {
-    if (hour === selectedStartHour) {
-      selectedStartHour = null;
-    } else {
-      selectedEndHour = hour;
-    }
-  } else {
+  if (selectedStartHour === hour) {
     selectedStartHour = null;
+    selectedEndHour = null;
+  } else {
+    selectedStartHour = hour;
     selectedEndHour = null;
   }
 
   updateTimeSlotAvailability();
 }
 
+function selectEndTime(hour) {
+  const clickedButton = document.querySelector(
+    `[data-end-hour="${hour}"]`
+  );
+
+  if (!clickedButton || clickedButton.disabled) {
+    return;
+  }
+
+  selectedEndHour = selectedEndHour === hour ? null : hour;
+  updateTimeSlotAvailability();
+}
+
 function syncSelectedTimeSlots() {
-  timeSlotButtons.forEach((button) => {
-    const hour = Number(button.dataset.timeHour);
-    const selected =
-      hour === selectedStartHour || hour === selectedEndHour;
+  startTimeButtons.forEach((button) => {
+    const selected = Number(button.dataset.startHour) === selectedStartHour;
+
+    button.classList.toggle("selected", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
+
+  endTimeButtons.forEach((button) => {
+    const selected = Number(button.dataset.endHour) === selectedEndHour;
 
     button.classList.toggle("selected", selected);
     button.setAttribute("aria-pressed", String(selected));
   });
 
   timeSlotMessage.classList.remove("success", "error");
+  selectedTimeSummary.parentElement.classList.remove("complete");
 
   if (selectedStartHour === null) {
     startTimeInput.value = "";
     endTimeInput.value = "";
+    selectedTimeSummary.textContent = "선택 전";
 
     if (!reservationDateInput.value) {
       timeSlotMessage.textContent = "예약 날짜를 먼저 선택해 주세요.";
@@ -421,18 +445,18 @@ function syncSelectedTimeSlots() {
 
   if (selectedEndHour === null) {
     endTimeInput.value = "";
-    timeSlotMessage.textContent =
-      `${formatHour(selectedStartHour)} 시작 시각 선택됨 · ` +
-      "종료 시각을 선택해 주세요.";
-    timeSlotMessage.classList.add("success");
+    selectedTimeSummary.textContent =
+      `${formatHour(selectedStartHour)} ~ 종료 시각 선택 필요`;
+    timeSlotMessage.textContent = "오른쪽에서 종료 시각을 선택해 주세요.";
     return;
   }
 
   endTimeInput.value = formatHour(selectedEndHour);
-  timeSlotMessage.textContent =
+  selectedTimeSummary.textContent =
     `${formatHour(selectedStartHour)} ~ ${formatHour(selectedEndHour)} ` +
-    `선택됨 (${selectedEndHour - selectedStartHour}시간)`;
-  timeSlotMessage.classList.add("success");
+    `(${selectedEndHour - selectedStartHour}시간)`;
+  selectedTimeSummary.parentElement.classList.add("complete");
+  timeSlotMessage.textContent = "시작 시각과 종료 시각이 선택되었습니다.";
 }
 
 function updateTimeSlotAvailability() {
@@ -440,69 +464,72 @@ function updateTimeSlotAvailability() {
 
   if (selectedStartHour !== null) {
     const startStatus = getTimeSlotStatus(dateValue, selectedStartHour);
-    const rangeStatus = selectedEndHour === null
-      ? startStatus
-      : getTimeRangeStatus(
+
+    if (!startStatus.available) {
+      selectedStartHour = null;
+      selectedEndHour = null;
+    } else if (selectedEndHour !== null) {
+      const rangeStatus = getTimeRangeStatus(
         dateValue,
         selectedStartHour,
         selectedEndHour
       );
 
-    if (!startStatus.available || !rangeStatus.available) {
-      selectedStartHour = null;
-      selectedEndHour = null;
+      if (!rangeStatus.available) {
+        selectedEndHour = null;
+      }
     }
   }
 
-  timeSlotButtons.forEach((button) => {
-    const hour = Number(button.dataset.timeHour);
+  startTimeButtons.forEach((button) => {
+    const hour = Number(button.dataset.startHour);
+    const statusText = button.querySelector("small");
+    const status = getTimeSlotStatus(dateValue, hour);
+
+    button.disabled = !status.available;
+    button.title = status.label;
+    button.setAttribute(
+      "aria-label",
+      `${formatHour(hour)} ${status.label}`
+    );
+    button.setAttribute("aria-disabled", String(!status.available));
+
+    if (statusText) {
+      statusText.textContent = status.label;
+    }
+  });
+
+  endTimeButtons.forEach((button) => {
+    const hour = Number(button.dataset.endHour);
     const statusText = button.querySelector("small");
     let status;
 
     if (selectedStartHour === null) {
-      const generalStatus = getTimeSlotStatus(
-        dateValue,
-        Math.min(hour, 17)
-      );
-
-      if (!generalStatus.available && generalStatus.label !== "예약됨") {
-        status = generalStatus;
-      } else if (hour === 18) {
-        status = { available: false, label: "종료만 가능" };
-      } else {
-        status = getTimeSlotStatus(dateValue, hour);
-      }
-    } else if (selectedEndHour === null) {
-      if (hour === selectedStartHour) {
-        status = { available: true, label: "시작 시각" };
-      } else if (
-        hour > selectedStartHour &&
-        hour <= Math.min(selectedStartHour + 2, 18)
-      ) {
-        status = getTimeRangeStatus(
-          dateValue,
-          selectedStartHour,
-          hour
-        );
-      } else {
-        status = { available: false, label: "선택 불가" };
-      }
+      status = { available: false, label: "시작 선택 필요" };
     } else if (
-      hour === selectedStartHour ||
-      hour === selectedEndHour
+      hour <= selectedStartHour ||
+      hour > Math.min(selectedStartHour + 2, 18)
     ) {
-      status = {
-        available: true,
-        label: hour === selectedStartHour ? "시작 시각" : "종료 시각"
-      };
+      status = { available: false, label: "선택 불가" };
     } else {
-      status = { available: false, label: "선택 완료" };
+      status = getTimeRangeStatus(
+        dateValue,
+        selectedStartHour,
+        hour
+      );
     }
 
     button.disabled = !status.available;
     button.title = status.label;
+    button.setAttribute(
+      "aria-label",
+      `${formatHour(hour)} ${status.label}`
+    );
     button.setAttribute("aria-disabled", String(!status.available));
-    statusText.textContent = status.label;
+
+    if (statusText) {
+      statusText.textContent = status.label;
+    }
   });
 
   syncSelectedTimeSlots();
@@ -511,9 +538,7 @@ function updateTimeSlotAvailability() {
     dateValue &&
     bookedSlotsLoaded &&
     selectedStartHour === null &&
-    Array.from(timeSlotButtons)
-      .filter((button) => Number(button.dataset.timeHour) < 18)
-      .every((button) => button.disabled)
+    Array.from(startTimeButtons).every((button) => button.disabled)
   ) {
     timeSlotMessage.textContent =
       "선택한 날짜에는 예약 가능한 시간이 없습니다.";
@@ -560,22 +585,75 @@ async function ensureReservationTeam(profile) {
   return true;
 }
 
+function toLocalDateValue(date) {
+  const localDate = new Date(
+    date.getTime() - date.getTimezoneOffset() * 60 * 1000
+  );
+  return localDate.toISOString().slice(0, 10);
+}
+
+function selectReservationDate(dateValue) {
+  const selectedButton = document.querySelector(
+    `[data-reservation-date="${dateValue}"]`
+  );
+
+  if (!selectedButton || selectedButton.disabled) {
+    return;
+  }
+
+  reservationDateInput.value = dateValue;
+
+  reservationDatePicker
+    .querySelectorAll("[data-reservation-date]")
+    .forEach((button) => {
+      const selected = button.dataset.reservationDate === dateValue;
+      button.classList.toggle("selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    });
+
+  resetSelectedTimeSlots();
+  updateTimeSlotAvailability();
+}
+
 function setDateLimits() {
-  const minDate = new Date();
-  minDate.setDate(minDate.getDate() + 1);
+  const weekdayNames = [
+    "일요일",
+    "월요일",
+    "화요일",
+    "수요일",
+    "목요일",
+    "금요일",
+    "토요일"
+  ];
 
-  const maxDate = new Date();
-  maxDate.setDate(maxDate.getDate() + 7);
+  reservationDatePicker.innerHTML = "";
 
-  const toLocalDateValue = (date) => {
-    const localDate = new Date(
-      date.getTime() - date.getTimezoneOffset() * 60 * 1000
-    );
-    return localDate.toISOString().slice(0, 10);
-  };
+  for (let offset = 1; offset <= 7; offset += 1) {
+    const date = new Date();
+    date.setHours(12, 0, 0, 0);
+    date.setDate(date.getDate() + offset);
 
-  reservationDateInput.min = toLocalDateValue(minDate);
-  reservationDateInput.max = toLocalDateValue(maxDate);
+    const dateValue = toLocalDateValue(date);
+    const weekday = date.getDay();
+    const weekend = weekday === 0 || weekday === 6;
+    const button = document.createElement("button");
+
+    button.type = "button";
+    button.dataset.reservationDate = dateValue;
+    button.disabled = weekend;
+    button.setAttribute("aria-disabled", String(weekend));
+    button.setAttribute("aria-pressed", "false");
+    button.innerHTML = `
+      <span>${date.getMonth() + 1}월 ${date.getDate()}일</span>
+      <small>${weekdayNames[weekday]}${weekend ? " · 이용 불가" : ""}</small>
+    `;
+
+    button.addEventListener("click", () => {
+      selectReservationDate(dateValue);
+    });
+
+    reservationDatePicker.appendChild(button);
+  }
 }
 
 async function loadBookedSlots() {
