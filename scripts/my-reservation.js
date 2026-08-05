@@ -7,6 +7,11 @@ import {
 let currentUser = null;
 let reservations = [];
 
+const ACTIVE_RESERVATION_STATUSES = new Set([
+  "documents_pending",
+  "ready"
+]);
+
 document
   .getElementById("logout-button")
   .addEventListener("click", logout);
@@ -32,7 +37,7 @@ async function loadReservations() {
       extension_requests(*)
     `)
     .order("start_at", {
-      ascending: false
+      ascending: true
     });
 
   if (error) {
@@ -40,7 +45,23 @@ async function loadReservations() {
     return;
   }
 
-  reservations = data;
+  const now = Date.now();
+
+  reservations = (data ?? []).filter((reservation) => {
+    const members = reservation.reservation_members ?? [];
+    const effectiveEnd = new Date(
+      reservation.effective_end_at ?? reservation.end_at
+    ).getTime();
+    const hasCompleteParticipantInfo =
+      members.length === Number(reservation.headcount);
+
+    return (
+      ACTIVE_RESERVATION_STATUSES.has(reservation.status) &&
+      Number.isFinite(effectiveEnd) &&
+      effectiveEnd >= now &&
+      hasCompleteParticipantInfo
+    );
+  });
   renderReservations();
 }
 
@@ -77,9 +98,9 @@ function renderReservations() {
   if (reservations.length === 0) {
     container.innerHTML =
       `<section class="card">
-        <h2>아직 예약이 없습니다</h2>
-        <p class="muted">새 예약을 만들면 이곳에서 진행 상태를 확인할 수 있습니다.</p>
-        <a class="button" href="./reservation.html">첫 예약 만들기</a>
+        <h2>현재 예약이 없습니다</h2>
+        <p class="muted">새 예약을 만들면 이곳에서 현재 예약을 확인할 수 있습니다.</p>
+        <a class="button" href="./reservation.html">새 예약 만들기</a>
       </section>`;
     return;
   }
