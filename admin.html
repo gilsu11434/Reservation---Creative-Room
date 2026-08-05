@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="창의융합프로젝트실 관리자 페이지">
   <title>관리자 - 창의융합프로젝트실</title>
-  <link rel="stylesheet" href="./styles/style.css?v=20260805-member-email">
+  <link rel="stylesheet" href="./styles/style.css?v=20260805-admin-calendar">
 </head>
 <body>
   <header class="app-header">
@@ -29,56 +29,44 @@
       <div>
         <p class="eyebrow">Administration</p>
         <h1>운영 관리</h1>
-        <p>가입 사용자와 전체 예약, 제출 서류 및 연장 신청을 관리합니다.</p>
+        <p>월간 달력에서 전체 예약 일정을 확인합니다.</p>
       </div>
     </div>
 
     <div id="admin-message" class="message" role="status"></div>
 
-    <section class="card">
-      <div class="card-header">
-        <div>
-          <p class="eyebrow">Users</p>
-          <h2>가입 사용자</h2>
-          <p class="muted">등록된 사용자 정보와 계정 유형을 확인합니다.</p>
-        </div>
-        <span class="icon-box" aria-hidden="true">人</span>
-      </div>
-
-      <div id="user-list" aria-live="polite">
-        사용자 정보를 불러오는 중입니다.
-      </div>
-    </section>
-
-    <section class="card">
-      <div class="card-header">
+    <section class="card admin-calendar-card">
+      <div class="admin-calendar-toolbar">
         <div>
           <p class="eyebrow">Reservations</p>
-          <h2>전체 예약</h2>
-          <p class="muted">예약 상태와 제출 자료를 확인하고 처리할 수 있습니다.</p>
+          <h2>전체 예약 현황</h2>
+          <p class="muted">같은 날짜의 예약은 시작 시각이 빠른 순서로 표시됩니다.</p>
         </div>
-        <span class="icon-box" aria-hidden="true">◷</span>
+
+        <div class="admin-calendar-actions">
+          <span class="admin-calendar-legend">
+            <i aria-hidden="true"></i>
+            빨간색은 시작 시각
+          </span>
+          <button id="calendar-today-button" type="button">오늘</button>
+          <div class="admin-calendar-navigation" aria-label="달력 월 이동">
+            <button id="calendar-prev-button" type="button" aria-label="이전 달">‹</button>
+            <strong id="calendar-month-label" aria-live="polite"></strong>
+            <button id="calendar-next-button" type="button" aria-label="다음 달">›</button>
+          </div>
+        </div>
       </div>
 
-      <div class="filter-row">
-        <label class="field">
-          예약 상태
-          <select id="status-filter">
-            <option value="all">전체</option>
-            <option value="documents_pending">수료증 확인 대기</option>
-            <option value="ready">이용 가능</option>
-            <option value="completed">이용 완료</option>
-            <option value="cancelled">취소</option>
-          </select>
-        </label>
-      </div>
-
-      <div id="admin-reservation-list" aria-live="polite">
-        예약 정보를 불러오는 중입니다.
+      <div class="admin-calendar-scroll">
+        <div
+          id="admin-reservation-calendar"
+          class="admin-calendar-grid"
+          aria-label="전체 예약 월간 달력"
+        ></div>
       </div>
     </section>
   </main>
 
-  <script type="module" src="./scripts/admin.js?v=20260805-member-email"></script>
+  <script type="module" src="./scripts/admin.js?v=20260805-admin-calendar"></script>
 </body>
 </html>
