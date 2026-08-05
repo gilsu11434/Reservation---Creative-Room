@@ -1456,6 +1456,190 @@ input[type="file"]::file-selector-button {
 }
 
 /* Admin */
+.admin-calendar-card {
+  overflow: hidden;
+  padding: 0;
+}
+
+.admin-calendar-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 26px;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-calendar-toolbar h2,
+.admin-calendar-toolbar p {
+  margin-bottom: 0;
+}
+
+.admin-calendar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.admin-calendar-actions > button,
+.admin-calendar-navigation button {
+  min-height: 40px;
+  border-color: var(--border);
+  color: var(--text);
+  background: var(--surface);
+}
+
+.admin-calendar-actions > button:hover,
+.admin-calendar-navigation button:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-soft);
+}
+
+.admin-calendar-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-right: 4px;
+  color: var(--text-soft);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-calendar-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--danger);
+}
+
+.admin-calendar-navigation {
+  display: grid;
+  grid-template-columns: 40px minmax(138px, auto) 40px;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-calendar-navigation button {
+  padding: 8px;
+  font-size: 22px;
+}
+
+.admin-calendar-navigation strong {
+  text-align: center;
+  font-size: 17px;
+  white-space: nowrap;
+}
+
+.admin-calendar-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.admin-calendar-grid {
+  display: grid;
+  min-width: 910px;
+  grid-template-columns: repeat(7, minmax(130px, 1fr));
+  background: var(--border);
+  gap: 1px;
+}
+
+.admin-calendar-weekday {
+  padding: 11px 8px;
+  color: var(--text-soft);
+  background: var(--surface-soft);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-calendar-weekday.is-sunday {
+  color: var(--danger);
+}
+
+.admin-calendar-weekday.is-saturday {
+  color: var(--info);
+}
+
+.admin-calendar-day {
+  min-width: 0;
+  min-height: 170px;
+  padding: 12px;
+  background: var(--surface);
+}
+
+.admin-calendar-day.is-outside-month,
+.admin-calendar-day.is-weekend {
+  background: #fafafa;
+}
+
+.admin-calendar-day.is-today {
+  box-shadow: inset 0 0 0 2px var(--brand);
+}
+
+.admin-calendar-date {
+  display: flex;
+  min-height: 27px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.admin-calendar-date small {
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: var(--brand-dark);
+  background: var(--brand-soft);
+  font-size: 10px;
+}
+
+.admin-calendar-day.is-weekend .admin-calendar-date {
+  color: var(--text-faint);
+}
+
+.calendar-reservation-list {
+  display: grid;
+  gap: 7px;
+}
+
+.calendar-reservation-item {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  padding: 8px 9px;
+  border: 1px solid #cfe8e1;
+  border-left: 3px solid var(--brand);
+  border-radius: 8px;
+  background: var(--surface-accent);
+}
+
+.calendar-reservation-name {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-reservation-time {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-soft);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.calendar-start-time {
+  color: var(--danger);
+  font-weight: 900;
+}
+
 .admin-user-row,
 .admin-reservation-card {
   padding: 22px;
@@ -1617,6 +1801,15 @@ input[type="file"]::file-selector-button {
     max-width: 520px;
   }
 
+  .admin-calendar-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-calendar-actions {
+    justify-content: flex-start;
+  }
+
   .reservation-layout {
     grid-template-columns: 1fr;
   }
@@ -1681,6 +1874,32 @@ input[type="file"]::file-selector-button {
   .form-card,
   .reservation-card {
     padding: 20px;
+  }
+
+  .admin-calendar-card {
+    padding: 0;
+  }
+
+  .admin-calendar-toolbar {
+    padding: 20px;
+  }
+
+  .admin-calendar-actions {
+    width: 100%;
+  }
+
+  .admin-calendar-legend {
+    width: 100%;
+  }
+
+  .admin-calendar-grid {
+    min-width: 770px;
+    grid-template-columns: repeat(7, minmax(110px, 1fr));
+  }
+
+  .admin-calendar-day {
+    min-height: 145px;
+    padding: 10px;
   }
 
   .form-grid,
