@@ -1149,7 +1149,7 @@ document
     }
 
     message.textContent =
-      `예약이 완료되었습니다. 예약번호: ${reservationId}`;
+      `예약이 완료되었습니다.`;
     message.classList.remove("error");
     message.classList.add("success");
 
