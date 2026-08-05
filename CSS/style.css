@@ -1,0 +1,106 @@
+.message {
+  padding: 12px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  background: #e8f1ff;
+  color: #17457c;
+}
+
+.error-message {
+  background: #ffe8e8;
+  color: #a00000;
+}
+
+.admin-user-row,
+.admin-reservation-card {
+  padding: 20px;
+  margin-bottom: 18px;
+  border: 1px solid #d8dce2;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.admin-user-row p,
+.admin-reservation-card p {
+  margin: 8px 0;
+}
+
+.reservation-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.status-badge {
+  display: inline-block;
+  width: auto;
+  padding: 5px 10px;
+  margin-left: 8px;
+  border-radius: 20px;
+  background: #e8f1ff;
+  color: #17457c;
+  font-size: 13px;
+}
+
+.admin-subsection {
+  padding: 15px;
+  margin-top: 18px;
+  border-radius: 8px;
+  background: #f6f8fb;
+}
+
+.document-row {
+  display: grid;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid #d9dee7;
+}
+
+.document-row button {
+  width: auto;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.admin-actions button {
+  flex: 1;
+}
+
+.danger-button {
+  background: #b42318;
+}
+
+.danger-button:hover {
+  background: #851b13;
+}
+
+.filter-row {
+  margin-bottom: 20px;
+}
+
+@media (max-width: 700px) {
+  .header {
+    display: block;
+  }
+
+  .header nav {
+    margin-top: 15px;
+  }
+
+  .reservation-heading {
+    display: block;
+  }
+
+  .admin-actions {
+    display: block;
+  }
+
+  .admin-actions button {
+    margin-bottom: 10px;
+  }
+}
