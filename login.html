@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+  <title>로그인 - 창의융합프로젝트실</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <main class="container">
+    <h1>창의융합프로젝트실</h1>
+
+    <section class="card">
+      <h2>회원가입</h2>
+
+      <form id="signup-form">
+        <label>
+          이름
+          <input id="signup-name" required>
+        </label>
+
+        <label>
+          전화번호
+          <input
+            id="signup-phone"
+            placeholder="010-0000-0000"
+            required
+          >
+        </label>
+
+        <label>
+          학과
+          <input
+            id="signup-department"
+            value="전자전기공학부"
+            required
+          >
+        </label>
+
+        <label>
+          학번
+          <input id="signup-student-id" required>
+        </label>
+
+        <label>
+          이메일
+          <input
+            id="signup-email"
+            type="email"
+            required
+          >
+        </label>
+
+        <label>
+          비밀번호
+          <input
+            id="signup-password"
+            type="password"
+            minlength="8"
+            required
+          >
+        </label>
+
+        <button type="submit">회원가입</button>
+      </form>
+
+      <p id="signup-message"></p>
+    </section>
+
+    <section class="card">
+      <h2>로그인</h2>
+
+      <form id="login-form">
+        <label>
+          이메일
+          <input
+            id="login-email"
+            type="email"
+            required
+          >
+        </label>
+
+        <label>
+          비밀번호
+          <input
+            id="login-password"
+            type="password"
+            required
+          >
+        </label>
+
+        <button type="submit">로그인</button>
+      </form>
+
+      <p id="login-message"></p>
+    </section>
+  </main>
+
+  <script type="module" src="./js/auth.js"></script>
+</body>
+</html>
