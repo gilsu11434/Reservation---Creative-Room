@@ -406,6 +406,18 @@ function formatHour(hour) {
   return `${String(hour).padStart(2, "0")}:00`;
 }
 
+function formatUsageHours(value) {
+  const hours = Number(value);
+
+  if (!Number.isFinite(hours)) {
+    return "0";
+  }
+
+  return Number.isInteger(hours)
+    ? String(hours)
+    : hours.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+}
+
 function getDateWeekday(dateValue) {
   const [year, month, day] = dateValue.split("-").map(Number);
   return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
@@ -1013,6 +1025,49 @@ document
       new Date(
         `${date}T${endTime}:00+09:00`
       ).toISOString();
+
+    const { data: weeklyUsage, error: weeklyUsageError } =
+      await supabase.rpc("check_participant_weekly_hours", {
+        p_emails: participants.map(
+          (participant) => participant.member_email
+        ),
+        p_start_at: startAt,
+        p_end_at: endAt
+      });
+
+    if (weeklyUsageError) {
+      message.textContent =
+        `주간 이용시간 확인 오류: ${weeklyUsageError.message}`;
+      message.classList.remove("success");
+      message.classList.add("error");
+      return;
+    }
+
+    const overLimitParticipants = (weeklyUsage ?? []).filter(
+      (usage) => !usage.is_allowed
+    );
+
+    if (overLimitParticipants.length > 0) {
+      const details = overLimitParticipants.map((usage) => {
+        const participant = participants.find(
+          (item) => item.member_email === usage.member_email
+        );
+
+        return (
+          `${participant?.member_name ?? usage.member_email} ` +
+          `(${usage.member_email}: 기존 ` +
+          `${formatUsageHours(usage.used_hours)}시간 + 신청 ` +
+          `${formatUsageHours(usage.requested_hours)}시간)`
+        );
+      });
+
+      message.textContent =
+        `주간 4시간을 초과하는 참여자가 있어 예약할 수 없습니다: ` +
+        details.join(" / ");
+      message.classList.remove("success");
+      message.classList.add("error");
+      return;
+    }
 
     const { data, error } = await supabase.rpc(
       "create_room_reservation",
