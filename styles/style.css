@@ -687,8 +687,8 @@ input[type="file"]::file-selector-button {
   min-height: 44px;
   padding: 9px 6px;
   border-color: var(--border-strong);
-  color: var(--text-soft);
-  background: var(--surface);
+  color: var(--text-soft) !important;
+  background: #ffffff !important;
   font-size: 14px;
 }
 
@@ -710,15 +710,15 @@ input[type="file"]::file-selector-button {
 .reservation-date-picker button:not(:disabled):hover,
 .time-choice-picker button:not(:disabled):hover {
   border-color: var(--brand);
-  color: var(--brand-dark);
-  background: var(--surface-accent);
+  color: var(--brand-dark) !important;
+  background: var(--surface-accent) !important;
 }
 
 .reservation-date-picker button.selected,
 .time-choice-picker button.selected {
   border-color: var(--brand);
-  color: #ffffff;
-  background: var(--brand);
+  color: #ffffff !important;
+  background: var(--brand) !important;
   box-shadow: 0 5px 14px rgba(16, 163, 127, 0.2);
 }
 
@@ -729,8 +729,8 @@ input[type="file"]::file-selector-button {
 .reservation-date-picker button:disabled,
 .time-choice-picker button:disabled {
   border-color: #d7d9dc;
-  color: #8b8e93;
-  background: #e8e9eb;
+  color: #8b8e93 !important;
+  background: #e8e9eb !important;
   box-shadow: none;
   cursor: not-allowed;
   opacity: 1;
