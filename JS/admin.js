@@ -101,10 +101,7 @@ async function initialize() {
     const permission =
       await checkApproved(user.id);
 
-    if (
-      permission.role !== "admin"
-      || permission.is_approved !== true
-    ) {
+    if (permission.role !== "admin") {
       alert("관리자만 접근할 수 있습니다.");
 
       window.location.href =
@@ -201,16 +198,17 @@ async function loadUsers() {
       const role =
         permission?.role ?? "user";
 
-      const approved =
-        permission?.is_approved === true;
-
       return `
         <article class="admin-user-row">
-          <div>
-            <strong>
-              ${escapeHtml(profile.full_name)}
-            </strong>
-
+          <div class="user-summary">
+            <div>
+              <strong>
+                ${escapeHtml(profile.full_name)}
+              </strong>
+              <p class="muted">
+                학번 ${escapeHtml(profile.student_id)}
+              </p>
+            </div>
             <span class="status-badge">
               ${role === "admin"
                 ? "관리자"
@@ -218,59 +216,24 @@ async function loadUsers() {
             </span>
           </div>
 
-          <p>
-            이메일:
-            ${escapeHtml(profile.email)}
-          </p>
-
-          <p>
-            학번:
-            ${escapeHtml(profile.student_id)}
-          </p>
-
-          <p>
-            학과:
-            ${escapeHtml(profile.department)}
-          </p>
-
-          <p>
-            전화번호:
-            ${escapeHtml(profile.phone)}
-          </p>
-
-          <p>
-            가입 승인:
-            <strong>
-              ${approved ? "승인 완료" : "승인 대기"}
-            </strong>
-          </p>
-
-          ${
-            role === "admin"
-              ? `
-                <p>
-                  관리자 계정은 이 화면에서
-                  승인 해제할 수 없습니다.
-                </p>
-              `
-              : `
-                <button
-                  type="button"
-                  data-action="${
-                    approved
-                      ? "revoke-user"
-                      : "approve-user"
-                  }"
-                  data-user-id="${profile.id}"
-                >
-                  ${
-                    approved
-                      ? "승인 해제"
-                      : "사용자 승인"
-                  }
-                </button>
-              `
-          }
+          <div class="detail-grid">
+            <p>
+              <span>연락용 이메일</span>
+              <strong>${escapeHtml(profile.email)}</strong>
+            </p>
+            <p>
+              <span>학과</span>
+              <strong>${escapeHtml(profile.department)}</strong>
+            </p>
+            <p>
+              <span>전화번호</span>
+              <strong>${escapeHtml(profile.phone)}</strong>
+            </p>
+            <p>
+              <span>이용 상태</span>
+              <strong>바로 이용 가능</strong>
+            </p>
+          </div>
         </article>
       `;
     })
@@ -350,7 +313,7 @@ function renderReservations() {
               )}
             </h3>
 
-            <span class="status-badge">
+            <span class="status-badge status-${escapeHtml(reservation.status)}">
               ${escapeHtml(
                 getStatusLabel(
                   reservation.status
@@ -618,65 +581,6 @@ function renderReservations() {
       `;
     })
     .join("");
-}
-
-
-userList.addEventListener("click", async (event) => {
-  const button =
-    event.target.closest("button[data-action]");
-
-  if (!button) {
-    return;
-  }
-
-  const action = button.dataset.action;
-  const userId = button.dataset.userId;
-
-  try {
-    if (action === "approve-user") {
-      await setUserApproval(userId, true);
-    }
-
-    if (action === "revoke-user") {
-      if (
-        !confirm(
-          "이 사용자의 승인을 해제하시겠습니까?"
-        )
-      ) {
-        return;
-      }
-
-      await setUserApproval(userId, false);
-    }
-
-    await loadUsers();
-  } catch (error) {
-    showMessage(error.message, true);
-  }
-});
-
-
-async function setUserApproval(
-  userId,
-  approved
-) {
-  const { error } = await supabase.rpc(
-    "admin_set_user_approval",
-    {
-      p_user_id: userId,
-      p_approved: approved
-    }
-  );
-
-  if (error) {
-    throw error;
-  }
-
-  showMessage(
-    approved
-      ? "사용자를 승인했습니다."
-      : "사용자 승인을 해제했습니다."
-  );
 }
 
 

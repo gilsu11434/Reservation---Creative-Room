@@ -2,103 +2,83 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <title>창의융합프로젝트실 관리자</title>
-
-  <link
-    rel="stylesheet"
-    href="./css/style.css"
-  >
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="창의융합프로젝트실 관리자 페이지">
+  <title>관리자 - 창의융합프로젝트실</title>
+  <link rel="stylesheet" href="./CSS/style.css">
 </head>
-
 <body>
-  <header class="header">
-    <div>
-      <h1>창의융합프로젝트실 관리자</h1>
-      <p>207관 605-1호</p>
-    </div>
+  <header class="app-header">
+    <a class="brand" href="./admin.html" aria-label="관리자 홈">
+      <span class="brand-mark" aria-hidden="true">융</span>
+      <span class="brand-copy">
+        <strong>창의융합프로젝트실 관리자</strong>
+        <small>207관 605-1호</small>
+      </span>
+    </a>
 
-    <nav>
+    <nav class="app-nav" aria-label="관리자 메뉴">
       <a href="./index.html">이용 안내</a>
-
-      <button
-        id="refresh-button"
-        type="button"
-      >
-        새로고침
-      </button>
-
-      <button
-        id="logout-button"
-        type="button"
-      >
-        로그아웃
-      </button>
+      <button id="refresh-button" type="button" class="header-button">새로고침</button>
+      <button id="logout-button" type="button">로그아웃</button>
     </nav>
   </header>
 
   <main class="container">
-    <div
-      id="admin-message"
-      class="message"
-    ></div>
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">Administration</p>
+        <h1>운영 관리</h1>
+        <p>가입 사용자와 전체 예약, 제출 서류 및 연장 신청을 관리합니다.</p>
+      </div>
+    </div>
+
+    <div id="admin-message" class="message" role="status"></div>
 
     <section class="card">
-      <h2>가입 사용자 관리</h2>
+      <div class="card-header">
+        <div>
+          <p class="eyebrow">Users</p>
+          <h2>가입 사용자</h2>
+          <p class="muted">등록된 사용자 정보와 계정 유형을 확인합니다.</p>
+        </div>
+        <span class="icon-box" aria-hidden="true">人</span>
+      </div>
 
-      <p>
-        이메일 인증 후 앱에 한 번 로그인한 사용자가
-        표시됩니다.
-      </p>
-
-      <div id="user-list">
+      <div id="user-list" aria-live="polite">
         사용자 정보를 불러오는 중입니다.
       </div>
     </section>
 
     <section class="card">
-      <h2>전체 예약 관리</h2>
+      <div class="card-header">
+        <div>
+          <p class="eyebrow">Reservations</p>
+          <h2>전체 예약</h2>
+          <p class="muted">예약 상태와 제출 자료를 확인하고 처리할 수 있습니다.</p>
+        </div>
+        <span class="icon-box" aria-hidden="true">◷</span>
+      </div>
 
       <div class="filter-row">
-        <label>
+        <label class="field">
           예약 상태
-
           <select id="status-filter">
             <option value="all">전체</option>
-
-            <option value="documents_pending">
-              수료증 확인 대기
-            </option>
-
-            <option value="ready">
-              이용 가능
-            </option>
-
-            <option value="completed">
-              이용 완료
-            </option>
-
-            <option value="cancelled">
-              취소
-            </option>
+            <option value="documents_pending">수료증 확인 대기</option>
+            <option value="ready">이용 가능</option>
+            <option value="completed">이용 완료</option>
+            <option value="cancelled">취소</option>
           </select>
         </label>
       </div>
 
-      <div id="admin-reservation-list">
-        예약정보를 불러오는 중입니다.
+      <div id="admin-reservation-list" aria-live="polite">
+        예약 정보를 불러오는 중입니다.
       </div>
     </section>
   </main>
 
-  <script
-    type="module"
-    src="./js/admin.js"
-  ></script>
+  <script type="module" src="./JS/admin.js"></script>
 </body>
 </html>

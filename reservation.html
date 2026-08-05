@@ -2,131 +2,157 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-  <title>호실 예약</title>
-  <link rel="stylesheet" href="./css/style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="창의융합프로젝트실 온라인 예약 신청">
+  <title>호실 예약 - 창의융합프로젝트실</title>
+  <link rel="stylesheet" href="./CSS/style.css">
 </head>
 <body>
-  <header class="header">
-    <h1>창의융합프로젝트실 예약</h1>
+  <header class="app-header">
+    <a class="brand" href="./index.html" aria-label="창의융합프로젝트실 홈">
+      <span class="brand-mark" aria-hidden="true">융</span>
+      <span class="brand-copy">
+        <strong>창의융합프로젝트실</strong>
+        <small>Room reservation</small>
+      </span>
+    </a>
 
-    <nav>
+    <nav class="app-nav" aria-label="예약 메뉴">
       <a href="./index.html">이용 안내</a>
-      <a href="./my-reservations.html">내 예약</a>
-      <button id="logout-button">로그아웃</button>
+      <a href="./reservation.html" aria-current="page">예약하기</a>
+      <a href="./my-reservation.html">내 예약</a>
+      <button id="logout-button" type="button">로그아웃</button>
     </nav>
   </header>
 
   <main class="container">
-    <section class="card">
-      <h2>팀 생성</h2>
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">Reservation</p>
+        <h1>호실 예약</h1>
+        <p>
+          팀을 선택하고 이용 정보를 작성해 주세요. 예약 가능한 날짜는
+          내일부터 7일 이내입니다.
+        </p>
+      </div>
+    </div>
 
-      <form id="team-form">
-        <label>
-          팀 이름
-          <input id="team-name" required>
-        </label>
+    <div class="reservation-layout">
+      <aside class="sidebar-stack" aria-label="팀 및 예약 현황">
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <p class="eyebrow">My team</p>
+              <h2>팀 생성</h2>
+            </div>
+            <span class="icon-box" aria-hidden="true">＋</span>
+          </div>
 
-        <button type="submit">팀 만들기</button>
-      </form>
+          <form id="team-form">
+            <label class="field">
+              팀 이름
+              <input id="team-name" placeholder="팀 이름을 입력하세요" required>
+            </label>
+            <button type="submit">팀 만들기</button>
+          </form>
+          <p id="team-message" class="form-message" role="status"></p>
+        </section>
 
-      <p id="team-message"></p>
-    </section>
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <p class="eyebrow">Schedule</p>
+              <h2>예약된 시간</h2>
+            </div>
+            <span class="icon-box" aria-hidden="true">◷</span>
+          </div>
+          <div id="booked-slots" aria-live="polite"></div>
+        </section>
+      </aside>
 
-    <section class="card">
-      <h2>예약된 시간</h2>
-      <div id="booked-slots"></div>
-    </section>
+      <section class="card form-card">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">New reservation</p>
+            <h2>예약 정보 입력</h2>
+            <p class="muted">필수 정보를 확인한 후 예약을 신청해 주세요.</p>
+          </div>
+          <span class="icon-box" aria-hidden="true">✓</span>
+        </div>
 
-    <section class="card">
-      <h2>예약 신청</h2>
+        <form id="reservation-form">
+          <div class="form-grid">
+            <label class="field field-full">
+              팀
+              <select id="team-select" required></select>
+            </label>
 
-      <form id="reservation-form">
-        <label>
-          팀
-          <select id="team-select" required></select>
-        </label>
+            <label class="field">
+              예약자 이름
+              <input id="requester-name" autocomplete="name" required>
+            </label>
 
-        <label>
-          예약자 이름
-          <input id="requester-name" required>
-        </label>
+            <label class="field">
+              전화번호
+              <input id="requester-phone" type="tel" autocomplete="tel" required>
+            </label>
 
-        <label>
-          전화번호
-          <input id="requester-phone" required>
-        </label>
+            <label class="field">
+              학과
+              <input id="department" value="전자전기공학부" required>
+            </label>
 
-        <label>
-          학과
-          <input
-            id="department"
-            value="전자전기공학부"
-            required
-          >
-        </label>
+            <label class="field">
+              학번
+              <input id="student-id" inputmode="numeric" required>
+            </label>
 
-        <label>
-          학번
-          <input id="student-id" required>
-        </label>
+            <label class="field">
+              사용 인원
+              <input id="headcount" type="number" min="1" placeholder="예: 4" required>
+            </label>
 
-        <label>
-          사용 인원
-          <input
-            id="headcount"
-            type="number"
-            min="1"
-            required
-          >
-        </label>
+            <label class="field">
+              사용할 장비
+              <input id="equipment" placeholder="인두기, 컴퓨터 등">
+            </label>
 
-        <label>
-          사용 목적
-          <textarea id="purpose" required></textarea>
-        </label>
+            <label class="field field-full">
+              사용 목적
+              <textarea id="purpose" placeholder="프로젝트와 사용 목적을 작성해 주세요." required></textarea>
+            </label>
 
-        <label>
-          사용할 장비
-          <input
-            id="equipment"
-            placeholder="인두기, 컴퓨터 등"
-          >
-        </label>
+            <label class="field">
+              예약 날짜
+              <input id="reservation-date" type="date" required>
+            </label>
 
-        <label>
-          예약 날짜
-          <input id="reservation-date" type="date" required>
-        </label>
+            <label class="field">
+              시작시간
+              <input id="start-time" type="time" required>
+            </label>
 
-        <label>
-          시작시간
-          <input id="start-time" type="time" required>
-        </label>
+            <label class="field">
+              종료시간
+              <input id="end-time" type="time" required>
+            </label>
 
-        <label>
-          종료시간
-          <input id="end-time" type="time" required>
-        </label>
+            <label class="checkbox-label field-full">
+              <input id="rules-agreed" type="checkbox" required>
+              <span>이용수칙과 파손·분실 책임 규정을 확인하고 동의합니다.</span>
+            </label>
+          </div>
 
-        <label class="checkbox-label">
-          <input id="rules-agreed" type="checkbox" required>
-          이용수칙과 파손·분실 책임 규정을 확인했습니다.
-        </label>
+          <div class="form-actions">
+            <button type="submit">예약 신청하기</button>
+          </div>
+        </form>
 
-        <button type="submit">예약하기</button>
-      </form>
-
-      <p id="reservation-message"></p>
-    </section>
+        <p id="reservation-message" class="form-message" role="status"></p>
+      </section>
+    </div>
   </main>
 
-  <script
-    type="module"
-    src="./js/reservation.js"
-  ></script>
+  <script type="module" src="./JS/reservation.js"></script>
 </body>
 </html>
