@@ -14,6 +14,14 @@ const participantsSection = document.getElementById("participants-section");
 const participantFields = document.getElementById("participant-fields");
 const participantSummary = document.getElementById("participant-summary");
 const reservationDateInput = document.getElementById("reservation-date");
+const reservationCalendar = document.getElementById("reservation-calendar");
+const calendarToggle = document.getElementById("calendar-toggle");
+const calendarValue = document.getElementById("calendar-value");
+const calendarPopover = document.getElementById("calendar-popover");
+const calendarMonth = document.getElementById("calendar-month");
+const calendarDays = document.getElementById("calendar-days");
+const calendarPrev = document.getElementById("calendar-prev");
+const calendarNext = document.getElementById("calendar-next");
 const startTimeInput = document.getElementById("start-time");
 const endTimeInput = document.getElementById("end-time");
 const startTimeButtons = document.querySelectorAll("[data-start-hour]");
@@ -28,6 +36,9 @@ let bookedSlotsLoaded = false;
 let bookedSlotsLoadFailed = false;
 let selectedStartHour = null;
 let selectedEndHour = null;
+let calendarMinimumDate = null;
+let calendarMaximumDate = null;
+let calendarViewDate = null;
 
 document
   .getElementById("logout-button")
@@ -49,24 +60,35 @@ document
   .getElementById("student-id")
   .addEventListener("input", updatePrimaryParticipant);
 
-reservationDateInput.addEventListener("change", () => {
-  const dateValue = reservationDateInput.value;
-  reservationDateInput.setCustomValidity("");
+calendarToggle.addEventListener("click", () => {
+  const opening = calendarPopover.hidden;
+  calendarPopover.hidden = !opening;
+  calendarToggle.setAttribute("aria-expanded", String(opening));
 
-  if (dateValue) {
-    const weekday = getDateWeekday(dateValue);
-
-    if (weekday === 0 || weekday === 6) {
-      reservationDateInput.value = "";
-      reservationDateInput.setCustomValidity(
-        "토요일과 일요일은 선택할 수 없습니다."
-      );
-      reservationDateInput.reportValidity();
-    }
+  if (opening) {
+    renderReservationCalendar();
   }
+});
 
-  resetSelectedTimeSlots();
-  updateTimeSlotAvailability();
+calendarPrev.addEventListener("click", () => {
+  moveCalendarMonth(-1);
+});
+
+calendarNext.addEventListener("click", () => {
+  moveCalendarMonth(1);
+});
+
+document.addEventListener("click", (event) => {
+  if (!reservationCalendar.contains(event.target)) {
+    closeReservationCalendar();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeReservationCalendar();
+    calendarToggle.focus();
+  }
 });
 
 startTimeButtons.forEach((button) => {
@@ -609,15 +631,176 @@ function toLocalDateValue(date) {
   return localDate.toISOString().slice(0, 10);
 }
 
+function parseLocalDateValue(dateValue) {
+  const [year, month, day] = dateValue.split("-").map(Number);
+  return new Date(year, month - 1, day, 12, 0, 0, 0);
+}
+
+function getMonthIndex(date) {
+  return date.getFullYear() * 12 + date.getMonth();
+}
+
+function closeReservationCalendar() {
+  calendarPopover.hidden = true;
+  calendarToggle.setAttribute("aria-expanded", "false");
+}
+
+function moveCalendarMonth(direction) {
+  if (!calendarViewDate) {
+    return;
+  }
+
+  const nextMonth = new Date(
+    calendarViewDate.getFullYear(),
+    calendarViewDate.getMonth() + direction,
+    1,
+    12
+  );
+  const minimumMonth = getMonthIndex(calendarMinimumDate);
+  const maximumMonth = getMonthIndex(calendarMaximumDate);
+  const nextMonthIndex = getMonthIndex(nextMonth);
+
+  if (
+    nextMonthIndex < minimumMonth ||
+    nextMonthIndex > maximumMonth
+  ) {
+    return;
+  }
+
+  calendarViewDate = nextMonth;
+  renderReservationCalendar();
+}
+
+function selectReservationDate(dateValue) {
+  const selectedDate = parseLocalDateValue(dateValue);
+  const weekday = selectedDate.getDay();
+  const outsideRange =
+    selectedDate < calendarMinimumDate ||
+    selectedDate > calendarMaximumDate;
+
+  if (outsideRange || weekday === 0 || weekday === 6) {
+    return;
+  }
+
+  reservationDateInput.value = dateValue;
+  calendarValue.textContent = dateValue;
+  calendarToggle.classList.add("has-value");
+  closeReservationCalendar();
+  resetSelectedTimeSlots();
+  updateTimeSlotAvailability();
+}
+
+function renderReservationCalendar() {
+  if (
+    !calendarViewDate ||
+    !calendarMinimumDate ||
+    !calendarMaximumDate
+  ) {
+    return;
+  }
+
+  const year = calendarViewDate.getFullYear();
+  const month = calendarViewDate.getMonth();
+  const firstWeekday = new Date(year, month, 1, 12).getDay();
+  const daysInMonth = new Date(year, month + 1, 0, 12).getDate();
+  const minimumMonth = getMonthIndex(calendarMinimumDate);
+  const maximumMonth = getMonthIndex(calendarMaximumDate);
+  const currentMonth = getMonthIndex(calendarViewDate);
+
+  calendarMonth.textContent = `${year}년 ${month + 1}월`;
+  calendarPrev.disabled = currentMonth <= minimumMonth;
+  calendarNext.disabled = currentMonth >= maximumMonth;
+  calendarDays.innerHTML = "";
+
+  for (let index = 0; index < firstWeekday; index += 1) {
+    const emptyCell = document.createElement("span");
+    emptyCell.className = "calendar-day-empty";
+    emptyCell.setAttribute("aria-hidden", "true");
+    calendarDays.appendChild(emptyCell);
+  }
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const date = new Date(year, month, day, 12);
+    const dateValue = toLocalDateValue(date);
+    const weekday = date.getDay();
+    const weekend = weekday === 0 || weekday === 6;
+    const outsideRange =
+      date < calendarMinimumDate || date > calendarMaximumDate;
+    const disabled = weekend || outsideRange;
+    const button = document.createElement("button");
+
+    button.type = "button";
+    button.className = "calendar-day";
+    button.textContent = String(day);
+    button.dataset.calendarDate = dateValue;
+    button.disabled = disabled;
+    button.setAttribute("role", "gridcell");
+    button.setAttribute("aria-disabled", String(disabled));
+    button.setAttribute(
+      "aria-label",
+      disabled
+        ? `${dateValue} 선택 불가`
+        : `${dateValue} 예약 날짜 선택`
+    );
+
+    if (weekend) {
+      button.classList.add("weekend");
+    }
+
+    if (outsideRange) {
+      button.classList.add("outside-range");
+    }
+
+    if (dateValue === reservationDateInput.value) {
+      button.classList.add("selected");
+      button.setAttribute("aria-selected", "true");
+    }
+
+    button.addEventListener("click", () => {
+      selectReservationDate(dateValue);
+    });
+
+    calendarDays.appendChild(button);
+  }
+
+  const occupiedCells = firstWeekday + daysInMonth;
+  const trailingCells = (7 - (occupiedCells % 7)) % 7;
+
+  for (let index = 0; index < trailingCells; index += 1) {
+    const emptyCell = document.createElement("span");
+    emptyCell.className = "calendar-day-empty";
+    emptyCell.setAttribute("aria-hidden", "true");
+    calendarDays.appendChild(emptyCell);
+  }
+}
+
 function setDateLimits() {
-  const minDate = new Date();
-  minDate.setDate(minDate.getDate() + 1);
+  calendarMinimumDate = new Date();
+  calendarMinimumDate.setHours(12, 0, 0, 0);
+  calendarMinimumDate.setDate(calendarMinimumDate.getDate() + 1);
 
-  const maxDate = new Date();
-  maxDate.setDate(maxDate.getDate() + 7);
+  calendarMaximumDate = new Date();
+  calendarMaximumDate.setHours(12, 0, 0, 0);
+  calendarMaximumDate.setDate(calendarMaximumDate.getDate() + 7);
 
-  reservationDateInput.min = toLocalDateValue(minDate);
-  reservationDateInput.max = toLocalDateValue(maxDate);
+  reservationDateInput.min = toLocalDateValue(calendarMinimumDate);
+  reservationDateInput.max = toLocalDateValue(calendarMaximumDate);
+  calendarViewDate = reservationDateInput.value
+    ? parseLocalDateValue(reservationDateInput.value)
+    : new Date(
+      calendarMinimumDate.getFullYear(),
+      calendarMinimumDate.getMonth(),
+      1,
+      12
+    );
+
+  calendarValue.textContent = reservationDateInput.value || "연도-월-일";
+  calendarToggle.classList.toggle(
+    "has-value",
+    Boolean(reservationDateInput.value)
+  );
+  closeReservationCalendar();
+  renderReservationCalendar();
 }
 
 async function loadBookedSlots() {
