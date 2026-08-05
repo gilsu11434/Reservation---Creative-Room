@@ -418,6 +418,33 @@ function formatUsageHours(value) {
     : hours.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
 }
 
+function formatUsageErrorMessage(value) {
+  return String(value || "참여자 정보를 저장하지 못했습니다.")
+    .replace(/^참여자\s+/, "")
+    .replace(
+      /(\d+(?:\.\d+)?)시간/g,
+      (match, hours) => `${formatUsageHours(hours)}시간`
+    );
+}
+
+function formatSeoulDate(value) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric"
+  }).format(new Date(value));
+}
+
+function formatSeoulTime(value) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+  }).format(new Date(value));
+}
+
 function getDateWeekday(dateValue) {
   const [year, month, day] = dateValue.split("-").map(Number);
   return new Date(Date.UTC(year, month - 1, day)).getUTCDay();
@@ -922,25 +949,17 @@ async function loadBookedSlots() {
 
   container.innerHTML = bookedSlots
     .map((slot) => {
-      const start = new Date(slot.start_at)
-        .toLocaleString("ko-KR", {
-          timeZone: "Asia/Seoul"
-        });
-
-      const end = new Date(slot.effective_end_at ?? slot.end_at)
-        .toLocaleString("ko-KR", {
-          timeZone: "Asia/Seoul"
-        });
-
-      const startParts = start.split(" ");
-      const endParts = end.split(" ");
+      const date = formatSeoulDate(slot.start_at);
+      const startTime = formatSeoulTime(slot.start_at);
+      const endTime = formatSeoulTime(
+        slot.effective_end_at ?? slot.end_at
+      );
 
       return `
         <div class="booked-slot">
-          <strong>${startParts.slice(0, 3).join(" ")}</strong>
+          <strong>${date}</strong>
           <span>
-            ${startParts.slice(3).join(" ")} ~
-            ${endParts.slice(3).join(" ")}
+            ${startTime} ~ ${endTime}
           </span>
         </div>
       `;
@@ -1025,6 +1044,49 @@ document
       new Date(
         `${date}T${endTime}:00+09:00`
       ).toISOString();
+
+    const { data: dailyUsage, error: dailyUsageError } =
+      await supabase.rpc("check_participant_daily_hours", {
+        p_emails: participants.map(
+          (participant) => participant.member_email
+        ),
+        p_start_at: startAt,
+        p_end_at: endAt
+      });
+
+    if (dailyUsageError) {
+      message.textContent =
+        `일일 이용시간 확인 오류: ${dailyUsageError.message}`;
+      message.classList.remove("success");
+      message.classList.add("error");
+      return;
+    }
+
+    const dailyOverLimitParticipants = (dailyUsage ?? []).filter(
+      (usage) => !usage.is_allowed
+    );
+
+    if (dailyOverLimitParticipants.length > 0) {
+      const details = dailyOverLimitParticipants.map((usage) => {
+        const participant = participants.find(
+          (item) => item.member_email === usage.member_email
+        );
+
+        return (
+          `${participant?.member_name ?? usage.member_email} ` +
+          `(${usage.member_email}: 기존 ` +
+          `${formatUsageHours(usage.used_hours)}시간 + 신청 ` +
+          `${formatUsageHours(usage.requested_hours)}시간)`
+        );
+      });
+
+      message.textContent =
+        `일일 2시간을 초과하는 참여자가 있어 예약할 수 없습니다: ` +
+        details.join(" / ");
+      message.classList.remove("success");
+      message.classList.add("error");
+      return;
+    }
 
     const { data: weeklyUsage, error: weeklyUsageError } =
       await supabase.rpc("check_participant_weekly_hours", {
@@ -1142,14 +1204,15 @@ document
         p_reservation_id: reservationId
       });
 
-      message.textContent =
-        `${memberError.message}`;
+      message.textContent = formatUsageErrorMessage(
+        memberError.message
+      );
       message.classList.add("error");
       return;
     }
 
     message.textContent =
-      `예약이 완료되었습니다.`;
+      `예약이 완료되었습니다. 예약번호: ${reservationId}`;
     message.classList.remove("error");
     message.classList.add("success");
 
