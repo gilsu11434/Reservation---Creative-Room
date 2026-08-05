@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+  <title>호실 예약</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <header class="header">
+    <h1>창의융합프로젝트실 예약</h1>
+
+    <nav>
+      <a href="./index.html">이용 안내</a>
+      <a href="./my-reservations.html">내 예약</a>
+      <button id="logout-button">로그아웃</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>팀 생성</h2>
+
+      <form id="team-form">
+        <label>
+          팀 이름
+          <input id="team-name" required>
+        </label>
+
+        <button type="submit">팀 만들기</button>
+      </form>
+
+      <p id="team-message"></p>
+    </section>
+
+    <section class="card">
+      <h2>예약된 시간</h2>
+      <div id="booked-slots"></div>
+    </section>
+
+    <section class="card">
+      <h2>예약 신청</h2>
+
+      <form id="reservation-form">
+        <label>
+          팀
+          <select id="team-select" required></select>
+        </label>
+
+        <label>
+          예약자 이름
+          <input id="requester-name" required>
+        </label>
+
+        <label>
+          전화번호
+          <input id="requester-phone" required>
+        </label>
+
+        <label>
+          학과
+          <input
+            id="department"
+            value="전자전기공학부"
+            required
+          >
+        </label>
+
+        <label>
+          학번
+          <input id="student-id" required>
+        </label>
+
+        <label>
+          사용 인원
+          <input
+            id="headcount"
+            type="number"
+            min="1"
+            required
+          >
+        </label>
+
+        <label>
+          사용 목적
+          <textarea id="purpose" required></textarea>
+        </label>
+
+        <label>
+          사용할 장비
+          <input
+            id="equipment"
+            placeholder="인두기, 컴퓨터 등"
+          >
+        </label>
+
+        <label>
+          예약 날짜
+          <input id="reservation-date" type="date" required>
+        </label>
+
+        <label>
+          시작시간
+          <input id="start-time" type="time" required>
+        </label>
+
+        <label>
+          종료시간
+          <input id="end-time" type="time" required>
+        </label>
+
+        <label class="checkbox-label">
+          <input id="rules-agreed" type="checkbox" required>
+          이용수칙과 파손·분실 책임 규정을 확인했습니다.
+        </label>
+
+        <button type="submit">예약하기</button>
+      </form>
+
+      <p id="reservation-message"></p>
+    </section>
+  </main>
+
+  <script
+    type="module"
+    src="./js/reservation.js"
+  ></script>
+</body>
+</html>
