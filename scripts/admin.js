@@ -330,6 +330,13 @@ function renderReservations() {
           </p>
 
           <p>
+            이메일:
+            ${escapeHtml(
+              reservation.requester_email || "미등록"
+            )}
+          </p>
+
+          <p>
             전화번호:
             ${escapeHtml(
               reservation.requester_phone
@@ -416,6 +423,10 @@ function renderReservations() {
                         /
                         ${escapeHtml(
                           member.student_id
+                        )}
+                        /
+                        ${escapeHtml(
+                          member.member_email || "이메일 미등록"
                         )}
                       </span>
 
