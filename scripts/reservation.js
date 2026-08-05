@@ -1143,7 +1143,7 @@ document
       });
 
       message.textContent =
-        `참여자 이메일 또는 정보 저장 오류: ${memberError.message}`;
+        `${memberError.message}`;
       message.classList.add("error");
       return;
     }
