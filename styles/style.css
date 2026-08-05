@@ -587,6 +587,204 @@ input[type="file"]::file-selector-button {
   font-size: 14px;
 }
 
+.time-slot-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.time-slot-fieldset legend {
+  padding: 0;
+  color: #34363a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.time-slot-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 12px 0;
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.time-slot-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.time-slot-legend i {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--surface);
+}
+
+.time-slot-legend i.selected {
+  border-color: var(--brand);
+  background: var(--brand);
+}
+
+.time-slot-legend i.unavailable {
+  border-color: #d0d2d6;
+  background: #dfe1e4;
+}
+
+.reservation-date-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.reservation-date-fieldset legend {
+  padding: 0;
+  color: #34363a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.reservation-date-picker {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(72px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.time-choice-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.time-choice-group {
+  min-width: 0;
+}
+
+.time-choice-group h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.time-choice-picker {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(48px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.reservation-date-picker button,
+.time-choice-picker button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 9px 6px;
+  border-color: var(--border-strong);
+  color: var(--text-soft);
+  background: var(--surface);
+  font-size: 14px;
+}
+
+.reservation-date-picker button span,
+.time-choice-picker button span {
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.reservation-date-picker button small {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.reservation-date-picker button:not(:disabled):hover,
+.time-choice-picker button:not(:disabled):hover {
+  border-color: var(--brand);
+  color: var(--brand-dark);
+  background: var(--surface-accent);
+}
+
+.reservation-date-picker button.selected,
+.time-choice-picker button.selected {
+  border-color: var(--brand);
+  color: #ffffff;
+  background: var(--brand);
+  box-shadow: 0 5px 14px rgba(16, 163, 127, 0.2);
+}
+
+.reservation-date-picker button.selected small {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.reservation-date-picker button:disabled,
+.time-choice-picker button:disabled {
+  border-color: #d7d9dc;
+  color: #8b8e93;
+  background: #e8e9eb;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 1;
+  transform: none;
+}
+
+.reservation-date-picker button:disabled small {
+  color: #92959a;
+}
+
+.final-time-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 13px 15px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-soft);
+  background: var(--surface-soft);
+  font-size: 14px;
+}
+
+.final-time-summary strong {
+  color: var(--text);
+  text-align: right;
+}
+
+.final-time-summary.complete {
+  border-color: #b9ded4;
+  background: var(--brand-soft);
+}
+
+.final-time-summary.complete strong {
+  color: var(--brand-dark);
+}
+
+.time-slot-message {
+  min-height: 22px;
+  margin: 10px 0 0;
+  color: var(--text-soft);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.time-slot-message.success {
+  color: var(--success);
+}
+
+.time-slot-message.error {
+  color: var(--danger-dark);
+}
+
 .form-message,
 [id$="-message"] {
   min-height: 24px;
@@ -1224,6 +1422,10 @@ input[type="file"]::file-selector-button {
   .headcount-picker {
     grid-template-columns: repeat(5, minmax(48px, 1fr));
   }
+
+  .reservation-date-picker {
+    grid-template-columns: repeat(4, minmax(72px, 1fr));
+  }
 }
 
 @media (max-width: 700px) {
@@ -1290,6 +1492,22 @@ input[type="file"]::file-selector-button {
   .participant-inputs,
   .participant-primary-info {
     grid-template-columns: 1fr;
+  }
+
+  .time-choice-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .reservation-date-picker {
+    grid-template-columns: repeat(2, minmax(100px, 1fr));
+  }
+
+  .final-time-summary {
+    display: grid;
+  }
+
+  .final-time-summary strong {
+    text-align: left;
   }
 
   .auth-page {
