@@ -83,10 +83,47 @@
               <input id="student-id" inputmode="numeric" required>
             </label>
 
-            <label class="field">
-              사용 인원
-              <input id="headcount" type="number" min="1" placeholder="예: 4" required>
-            </label>
+            <fieldset class="field field-full headcount-fieldset">
+              <legend>사용 인원</legend>
+              <p class="field-help">예약자를 포함한 전체 인원을 클릭해 주세요.</p>
+              <div
+                id="headcount-picker"
+                class="headcount-picker"
+                role="group"
+                aria-label="사용 인원 선택"
+              >
+                <button type="button" data-headcount="1">1명</button>
+                <button type="button" data-headcount="2">2명</button>
+                <button type="button" data-headcount="3">3명</button>
+                <button type="button" data-headcount="4">4명</button>
+                <button type="button" data-headcount="5">5명</button>
+                <button type="button" data-headcount="6">6명</button>
+                <button type="button" data-headcount="7">7명</button>
+                <button type="button" data-headcount="8">8명</button>
+                <button type="button" data-headcount="9">9명</button>
+                <button type="button" data-headcount="10">10명</button>
+              </div>
+              <input id="headcount" type="hidden" value="">
+            </fieldset>
+
+            <section
+              id="participants-section"
+              class="participants-section field-full"
+              aria-labelledby="participants-title"
+              hidden
+            >
+              <div class="participants-heading">
+                <div>
+                  <p class="eyebrow">Participants</p>
+                  <h3 id="participants-title">참여자 정보</h3>
+                </div>
+                <span id="participant-summary" class="status-badge"></span>
+              </div>
+              <p class="field-help">
+                예약자는 자동으로 포함됩니다. 추가 참여자의 이름과 학번을 입력해 주세요.
+              </p>
+              <div id="participant-fields" class="participant-fields"></div>
+            </section>
 
             <label class="field">
               사용할 장비
