@@ -475,6 +475,49 @@ input[type="file"]::file-selector-button {
   position: relative;
 }
 
+.reservation-date-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  flex-wrap: wrap;
+}
+
+.calendar-status-legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-soft);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.calendar-status-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.calendar-status-legend i {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: #ffffff;
+}
+
+.calendar-status-legend i.selected {
+  border-color: var(--brand);
+  background: var(--brand);
+}
+
+.calendar-status-legend i.unavailable {
+  border-color: #d7d9dc;
+  background: #e8e9eb;
+}
+
 .calendar-input {
   display: flex;
   width: 100%;
