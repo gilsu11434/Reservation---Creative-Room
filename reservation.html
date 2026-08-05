@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="창의융합프로젝트실 온라인 예약 신청">
   <title>호실 예약 - 창의융합프로젝트실</title>
-  <link rel="stylesheet" href="./styles/style.css">
+  <link rel="stylesheet" href="./styles/style.css?v=20260805-calendar-white">
 </head>
 <body>
   <header class="app-header">
@@ -135,19 +135,13 @@
               <textarea id="purpose" placeholder="프로젝트와 사용 목적을 작성해 주세요." required></textarea>
             </label>
 
-            <fieldset class="field field-full reservation-date-fieldset">
-              <legend>예약 날짜</legend>
-              <p class="field-help">
-                예약할 날짜를 선택해 주세요. 토요일과 일요일은 선택할 수 없습니다.
-              </p>
-              <div
-                id="reservation-date-picker"
-                class="reservation-date-picker"
-                role="group"
-                aria-label="예약 날짜 선택"
-              ></div>
-              <input id="reservation-date" type="hidden" value="">
-            </fieldset>
+            <label class="field">
+              예약 날짜
+              <input id="reservation-date" type="date" required>
+              <span class="field-help">
+                토요일과 일요일은 선택할 수 없습니다.
+              </span>
+            </label>
 
             <fieldset class="field field-full time-slot-fieldset">
               <legend>예약 시간</legend>
@@ -225,6 +219,6 @@
     </div>
   </main>
 
-  <script type="module" src="./scripts/reservation.js"></script>
+  <script type="module" src="./scripts/reservation.js?v=20260805-calendar-white"></script>
 </body>
 </html>
