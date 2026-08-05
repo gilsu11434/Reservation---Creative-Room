@@ -31,33 +31,14 @@
         <p class="eyebrow">Reservation</p>
         <h1>호실 예약</h1>
         <p>
-          팀을 선택하고 이용 정보를 작성해 주세요. 예약 가능한 날짜는
-          내일부터 7일 이내입니다.
+          이용 정보를 작성해 주세요. 예약 가능한 날짜는 내일부터
+          7일 이내입니다.
         </p>
       </div>
     </div>
 
     <div class="reservation-layout">
-      <aside class="sidebar-stack" aria-label="팀 및 예약 현황">
-        <section class="card">
-          <div class="card-header">
-            <div>
-              <p class="eyebrow">My team</p>
-              <h2>팀 생성</h2>
-            </div>
-            <span class="icon-box" aria-hidden="true">＋</span>
-          </div>
-
-          <form id="team-form">
-            <label class="field">
-              팀 이름
-              <input id="team-name" placeholder="팀 이름을 입력하세요" required>
-            </label>
-            <button type="submit">팀 만들기</button>
-          </form>
-          <p id="team-message" class="form-message" role="status"></p>
-        </section>
-
+      <aside class="sidebar-stack" aria-label="예약 현황">
         <section class="card">
           <div class="card-header">
             <div>
@@ -82,11 +63,6 @@
 
         <form id="reservation-form">
           <div class="form-grid">
-            <label class="field field-full">
-              팀
-              <select id="team-select" required></select>
-            </label>
-
             <label class="field">
               예약자 이름
               <input id="requester-name" autocomplete="name" required>

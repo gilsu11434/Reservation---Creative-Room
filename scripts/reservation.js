@@ -5,9 +5,7 @@ import {
 } from "./config.js";
 
 let currentUser = null;
-
-const teamSelect =
-  document.getElementById("team-select");
+let currentTeamId = null;
 
 document
   .getElementById("logout-button")
@@ -20,8 +18,13 @@ async function initialize() {
     return;
   }
 
-  await loadProfile();
-  await loadTeams();
+  const profile = await loadProfile();
+
+  if (!profile) {
+    return;
+  }
+
+  await ensureReservationTeam(profile);
   await loadBookedSlots();
   setDateLimits();
 }
@@ -35,7 +38,7 @@ async function loadProfile() {
 
   if (error) {
     alert(error.message);
-    return;
+    return null;
   }
 
   document.getElementById("requester-name").value =
@@ -49,65 +52,48 @@ async function loadProfile() {
 
   document.getElementById("student-id").value =
     data.student_id;
+
+  return data;
 }
 
-async function loadTeams() {
-  const { data, error } = await supabase
+async function ensureReservationTeam(profile) {
+  const { data: existingTeams, error: loadError } = await supabase
     .from("teams")
-    .select("*")
-    .order("created_at");
+    .select("id")
+    .eq("leader_id", currentUser.id)
+    .order("created_at", { ascending: true })
+    .limit(1);
 
-  if (error) {
-    alert(error.message);
-    return;
+  if (loadError) {
+    alert(`예약 정보 준비 오류: ${loadError.message}`);
+    return false;
   }
 
-  teamSelect.innerHTML = "";
-
-  if (data.length === 0) {
-    const option = document.createElement("option");
-    option.textContent = "먼저 팀을 만들어주세요.";
-    option.value = "";
-    teamSelect.appendChild(option);
-    return;
+  if (existingTeams.length > 0) {
+    currentTeamId = existingTeams[0].id;
+    return true;
   }
 
-  data.forEach((team) => {
-    const option = document.createElement("option");
-    option.value = team.id;
-    option.textContent = team.team_name;
-    teamSelect.appendChild(option);
-  });
+  const defaultTeamName =
+    `${profile.student_id || currentUser.id.slice(0, 8)} 예약`;
+
+  const { data: createdTeam, error: createError } = await supabase
+    .from("teams")
+    .insert({
+      team_name: defaultTeamName,
+      leader_id: currentUser.id
+    })
+    .select("id")
+    .single();
+
+  if (createError) {
+    alert(`예약 정보 준비 오류: ${createError.message}`);
+    return false;
+  }
+
+  currentTeamId = createdTeam.id;
+  return true;
 }
-
-document
-  .getElementById("team-form")
-  .addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const teamName =
-      document.getElementById("team-name").value.trim();
-
-    const { error } = await supabase
-      .from("teams")
-      .insert({
-        team_name: teamName,
-        leader_id: currentUser.id
-      });
-
-    const message =
-      document.getElementById("team-message");
-
-    if (error) {
-      message.textContent = error.message;
-      return;
-    }
-
-    message.textContent = "팀을 만들었습니다.";
-    event.target.reset();
-
-    await loadTeams();
-  });
 
 function setDateLimits() {
   const dateInput =
@@ -186,6 +172,16 @@ document
   .addEventListener("submit", async (event) => {
     event.preventDefault();
 
+    const message =
+      document.getElementById("reservation-message");
+
+    if (!currentTeamId) {
+      message.textContent =
+        "예약 정보를 준비하지 못했습니다. 페이지를 새로고침해 주세요.";
+      message.classList.add("error");
+      return;
+    }
+
     const date =
       document.getElementById("reservation-date").value;
 
@@ -208,7 +204,7 @@ document
     const { data, error } = await supabase.rpc(
       "create_room_reservation",
       {
-        p_team_id: teamSelect.value,
+        p_team_id: currentTeamId,
 
         p_requester_name:
           document.getElementById("requester-name")
@@ -248,16 +244,16 @@ document
       }
     );
 
-    const message =
-      document.getElementById("reservation-message");
-
     if (error) {
       message.textContent = error.message;
+      message.classList.add("error");
       return;
     }
 
     message.textContent =
       `예약이 완료되었습니다. 예약번호: ${data}`;
+    message.classList.remove("error");
+    message.classList.add("success");
 
     event.target.reset();
 
