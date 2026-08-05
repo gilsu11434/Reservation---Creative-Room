@@ -60,6 +60,10 @@ document
   .getElementById("student-id")
   .addEventListener("input", updatePrimaryParticipant);
 
+document
+  .getElementById("requester-email")
+  .addEventListener("input", updatePrimaryParticipant);
+
 calendarToggle.addEventListener("click", () => {
   const opening = calendarPopover.hidden;
   calendarPopover.hidden = !opening;
@@ -148,6 +152,9 @@ function fillProfile(profile) {
   document.getElementById("requester-name").value =
     profile.full_name ?? "";
 
+  document.getElementById("requester-email").value =
+    normalizeEmail(profile.email ?? currentUser?.email ?? "");
+
   document.getElementById("requester-phone").value =
     profile.phone ?? "";
 
@@ -169,11 +176,13 @@ function getSavedParticipantValues() {
       const index = Number(card.dataset.participantIndex);
       const nameInput = card.querySelector(".participant-name");
       const studentIdInput = card.querySelector(".participant-student-id");
+      const emailInput = card.querySelector(".participant-email");
 
-      if (nameInput && studentIdInput) {
+      if (nameInput && studentIdInput && emailInput) {
         saved.set(index, {
           name: nameInput.value,
-          studentId: studentIdInput.value
+          studentId: studentIdInput.value,
+          email: emailInput.value
         });
       }
     });
@@ -214,6 +223,10 @@ function renderParticipantFields(count, savedValues = new Map()) {
         <span>학번</span>
         <strong data-primary-student-id></strong>
       </div>
+      <div>
+        <span>이메일</span>
+        <strong data-primary-email></strong>
+      </div>
     </div>
   `;
   participantFields.appendChild(primaryCard);
@@ -245,12 +258,23 @@ function renderParticipantFields(count, savedValues = new Map()) {
             required
           >
         </label>
+        <label>
+          이메일
+          <input
+            class="participant-email"
+            type="email"
+            autocomplete="email"
+            placeholder="가입한 이메일을 입력하세요"
+            required
+          >
+        </label>
       </div>
     `;
 
     card.querySelector(".participant-name").value = saved.name ?? "";
     card.querySelector(".participant-student-id").value =
       saved.studentId ?? "";
+    card.querySelector(".participant-email").value = saved.email ?? "";
     participantFields.appendChild(card);
   }
 
@@ -262,6 +286,9 @@ function updatePrimaryParticipant() {
   const studentIdElement = participantFields.querySelector(
     "[data-primary-student-id]"
   );
+  const emailElement = participantFields.querySelector(
+    "[data-primary-email]"
+  );
 
   if (nameElement) {
     nameElement.textContent =
@@ -272,6 +299,11 @@ function updatePrimaryParticipant() {
     studentIdElement.textContent =
       document.getElementById("student-id").value.trim() || "-";
   }
+
+  if (emailElement) {
+    emailElement.textContent =
+      normalizeEmail(document.getElementById("requester-email").value) || "-";
+  }
 }
 
 function collectParticipants() {
@@ -281,10 +313,21 @@ function collectParticipants() {
     throw new Error("사용 인원을 선택해 주세요.");
   }
 
+  const requesterEmail = normalizeEmail(
+    document.getElementById("requester-email").value
+  );
+
+  if (!isValidEmail(requesterEmail)) {
+    throw new Error(
+      "예약자 이메일을 확인할 수 없습니다. 회원정보의 이메일을 확인해 주세요."
+    );
+  }
+
   const participants = [
     {
       member_name: document.getElementById("requester-name").value.trim(),
-      student_id: document.getElementById("student-id").value.trim()
+      student_id: document.getElementById("student-id").value.trim(),
+      member_email: requesterEmail
     }
   ];
 
@@ -301,14 +344,24 @@ function collectParticipants() {
       const studentId = card
         .querySelector(".participant-student-id")
         .value.trim();
+      const memberEmail = normalizeEmail(
+        card.querySelector(".participant-email").value
+      );
 
-      if (!memberName || !studentId) {
-        throw new Error(`${index + 1}번 참여자의 이름과 학번을 입력해 주세요.`);
+      if (!memberName || !studentId || !memberEmail) {
+        throw new Error(
+          `${index + 1}번 참여자의 이름, 학번, 이메일을 입력해 주세요.`
+        );
+      }
+
+      if (!isValidEmail(memberEmail)) {
+        throw new Error(`${index + 1}번 참여자의 이메일 형식이 올바르지 않습니다.`);
       }
 
       participants.push({
         member_name: memberName,
-        student_id: studentId
+        student_id: studentId,
+        member_email: memberEmail
       });
     });
 
@@ -316,6 +369,14 @@ function collectParticipants() {
 
   if (new Set(studentIds).size !== studentIds.length) {
     throw new Error("같은 학번을 두 번 입력할 수 없습니다.");
+  }
+
+  const memberEmails = participants.map(
+    (participant) => participant.member_email
+  );
+
+  if (new Set(memberEmails).size !== memberEmails.length) {
+    throw new Error("같은 이메일을 두 번 입력할 수 없습니다.");
   }
 
   return participants;
@@ -331,6 +392,14 @@ function resetHeadcountPicker() {
     button.classList.remove("selected");
     button.setAttribute("aria-pressed", "false");
   });
+}
+
+function normalizeEmail(value) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 function formatHour(hour) {
@@ -908,6 +977,33 @@ document
       return;
     }
 
+    const { data: emailChecks, error: emailCheckError } =
+      await supabase.rpc("check_registered_participant_emails", {
+        p_emails: participants.map(
+          (participant) => participant.member_email
+        )
+      });
+
+    if (emailCheckError) {
+      message.textContent =
+        `참여자 이메일 확인 오류: ${emailCheckError.message}`;
+      message.classList.remove("success");
+      message.classList.add("error");
+      return;
+    }
+
+    const unregisteredEmails = (emailChecks ?? [])
+      .filter((result) => !result.is_registered)
+      .map((result) => result.member_email);
+
+    if (unregisteredEmails.length > 0) {
+      message.textContent =
+        `가입되지 않은 이메일입니다: ${unregisteredEmails.join(", ")}`;
+      message.classList.remove("success");
+      message.classList.add("error");
+      return;
+    }
+
     const startAt =
       new Date(
         `${date}T${startTime}:00+09:00`
@@ -977,15 +1073,14 @@ document
       return;
     }
 
-    const memberRows = participants.map((participant) => ({
-      reservation_id: reservationId,
-      member_name: participant.member_name,
-      student_id: participant.student_id
-    }));
-
-    const { error: memberError } = await supabase
-      .from("reservation_members")
-      .insert(memberRows);
+    const { error: memberError } = await supabase.rpc(
+      "save_verified_reservation_participants",
+      {
+        p_reservation_id: String(reservationId),
+        p_requester_email: participants[0].member_email,
+        p_participants: participants
+      }
+    );
 
     if (memberError) {
       await supabase.rpc("cancel_my_reservation", {
@@ -993,7 +1088,7 @@ document
       });
 
       message.textContent =
-        `참여자 정보 저장 오류: ${memberError.message}`;
+        `참여자 이메일 또는 정보 저장 오류: ${memberError.message}`;
       message.classList.add("error");
       return;
     }
