@@ -148,6 +148,7 @@ function renderReservations() {
                     <form class="member-form" data-id="${reservation.id}">
                       <input name="memberName" placeholder="참여자 이름" aria-label="참여자 이름" required>
                       <input name="studentId" placeholder="학번" aria-label="참여자 학번" required>
+                      <input name="memberEmail" type="email" placeholder="가입 이메일" aria-label="참여자 이메일" required>
                       <input name="certificate" type="file" accept=".pdf,.jpg,.jpeg,.png" aria-label="수료증 파일" required>
                       <button type="submit">수료증 제출</button>
                     </form>
@@ -158,7 +159,10 @@ function renderReservations() {
                         <div class="participant-upload-row">
                           <div class="participant-upload-name">
                             <strong>${escapeHtml(member.member_name)}</strong>
-                            <span>${escapeHtml(member.student_id)}</span>
+                            <span>
+                              ${escapeHtml(member.student_id)} ·
+                              ${escapeHtml(member.member_email ?? "이메일 미등록")}
+                            </span>
                           </div>
                           ${
                             member.safety_certificate_path
@@ -287,7 +291,24 @@ function attachEventListeners() {
           form.memberName.value.trim();
         const studentId =
           form.studentId.value.trim();
+        const memberEmail =
+          form.memberEmail.value.trim().toLowerCase();
         const file = form.certificate.files[0];
+
+        const { data: emailChecks, error: emailCheckError } =
+          await supabase.rpc("check_registered_participant_emails", {
+            p_emails: [memberEmail]
+          });
+
+        if (emailCheckError) {
+          alert(emailCheckError.message);
+          return;
+        }
+
+        if (!emailChecks?.[0]?.is_registered) {
+          alert("가입되지 않은 이메일입니다.");
+          return;
+        }
 
         try {
           validateFile(file);
@@ -325,6 +346,7 @@ function attachEventListeners() {
             reservation_id: reservationId,
             member_name: memberName,
             student_id: studentId,
+            member_email: memberEmail,
             safety_certificate_path: path,
             safety_submitted_at:
               new Date().toISOString()
