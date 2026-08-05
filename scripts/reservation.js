@@ -781,7 +781,7 @@ function setDateLimits() {
 
   calendarMaximumDate = new Date();
   calendarMaximumDate.setHours(12, 0, 0, 0);
-  calendarMaximumDate.setDate(calendarMaximumDate.getDate() + 7);
+  calendarMaximumDate.setDate(calendarMaximumDate.getDate() + 14);
 
   reservationDateInput.min = toLocalDateValue(calendarMinimumDate);
   reservationDateInput.max = toLocalDateValue(calendarMaximumDate);
@@ -807,7 +807,7 @@ async function loadBookedSlots() {
   const from = new Date();
 
   const to = new Date();
-  to.setDate(to.getDate() + 8);
+  to.setDate(to.getDate() + 15);
 
   const { data, error } = await supabase.rpc(
     "get_booked_slots",
