@@ -6,10 +6,33 @@ import {
 
 let currentUser = null;
 let currentTeamId = null;
+let currentProfile = null;
+
+const headcountInput = document.getElementById("headcount");
+const headcountButtons = document.querySelectorAll("[data-headcount]");
+const participantsSection = document.getElementById("participants-section");
+const participantFields = document.getElementById("participant-fields");
+const participantSummary = document.getElementById("participant-summary");
 
 document
   .getElementById("logout-button")
   .addEventListener("click", logout);
+
+headcountButtons.forEach((button) => {
+  button.setAttribute("aria-pressed", "false");
+
+  button.addEventListener("click", () => {
+    selectHeadcount(Number(button.dataset.headcount));
+  });
+});
+
+document
+  .getElementById("requester-name")
+  .addEventListener("input", updatePrimaryParticipant);
+
+document
+  .getElementById("student-id")
+  .addEventListener("input", updatePrimaryParticipant);
 
 async function initialize() {
   currentUser = await getCurrentUser();
@@ -41,19 +64,199 @@ async function loadProfile() {
     return null;
   }
 
-  document.getElementById("requester-name").value =
-    data.full_name;
-
-  document.getElementById("requester-phone").value =
-    data.phone ?? "";
-
-  document.getElementById("department").value =
-    data.department;
-
-  document.getElementById("student-id").value =
-    data.student_id;
+  currentProfile = data;
+  fillProfile(data);
 
   return data;
+}
+
+function fillProfile(profile) {
+  document.getElementById("requester-name").value =
+    profile.full_name ?? "";
+
+  document.getElementById("requester-phone").value =
+    profile.phone ?? "";
+
+  document.getElementById("department").value =
+    profile.department ?? "";
+
+  document.getElementById("student-id").value =
+    profile.student_id ?? "";
+
+  updatePrimaryParticipant();
+}
+
+function getSavedParticipantValues() {
+  const saved = new Map();
+
+  participantFields
+    .querySelectorAll(".participant-card[data-participant-index]")
+    .forEach((card) => {
+      const index = Number(card.dataset.participantIndex);
+      const nameInput = card.querySelector(".participant-name");
+      const studentIdInput = card.querySelector(".participant-student-id");
+
+      if (nameInput && studentIdInput) {
+        saved.set(index, {
+          name: nameInput.value,
+          studentId: studentIdInput.value
+        });
+      }
+    });
+
+  return saved;
+}
+
+function selectHeadcount(count) {
+  const savedValues = getSavedParticipantValues();
+
+  headcountInput.value = String(count);
+  participantSummary.textContent = `${count}명 선택`;
+  participantsSection.hidden = false;
+
+  headcountButtons.forEach((button) => {
+    const selected = Number(button.dataset.headcount) === count;
+    button.classList.toggle("selected", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
+
+  renderParticipantFields(count, savedValues);
+}
+
+function renderParticipantFields(count, savedValues = new Map()) {
+  participantFields.innerHTML = "";
+
+  const primaryCard = document.createElement("div");
+  primaryCard.className = "participant-card participant-primary";
+  primaryCard.dataset.participantIndex = "0";
+  primaryCard.innerHTML = `
+    <span class="participant-number">1</span>
+    <div class="participant-primary-info">
+      <div>
+        <span>예약자 이름</span>
+        <strong data-primary-name></strong>
+      </div>
+      <div>
+        <span>학번</span>
+        <strong data-primary-student-id></strong>
+      </div>
+    </div>
+  `;
+  participantFields.appendChild(primaryCard);
+
+  for (let index = 1; index < count; index += 1) {
+    const saved = savedValues.get(index) ?? {};
+    const card = document.createElement("div");
+    card.className = "participant-card";
+    card.dataset.participantIndex = String(index);
+    card.innerHTML = `
+      <span class="participant-number">${index + 1}</span>
+      <div class="participant-inputs">
+        <label>
+          참여자 이름
+          <input
+            class="participant-name"
+            autocomplete="off"
+            placeholder="이름을 입력하세요"
+            required
+          >
+        </label>
+        <label>
+          학번
+          <input
+            class="participant-student-id"
+            inputmode="numeric"
+            autocomplete="off"
+            placeholder="학번을 입력하세요"
+            required
+          >
+        </label>
+      </div>
+    `;
+
+    card.querySelector(".participant-name").value = saved.name ?? "";
+    card.querySelector(".participant-student-id").value =
+      saved.studentId ?? "";
+    participantFields.appendChild(card);
+  }
+
+  updatePrimaryParticipant();
+}
+
+function updatePrimaryParticipant() {
+  const nameElement = participantFields.querySelector("[data-primary-name]");
+  const studentIdElement = participantFields.querySelector(
+    "[data-primary-student-id]"
+  );
+
+  if (nameElement) {
+    nameElement.textContent =
+      document.getElementById("requester-name").value.trim() || "-";
+  }
+
+  if (studentIdElement) {
+    studentIdElement.textContent =
+      document.getElementById("student-id").value.trim() || "-";
+  }
+}
+
+function collectParticipants() {
+  const headcount = Number(headcountInput.value);
+
+  if (!headcount) {
+    throw new Error("사용 인원을 선택해 주세요.");
+  }
+
+  const participants = [
+    {
+      member_name: document.getElementById("requester-name").value.trim(),
+      student_id: document.getElementById("student-id").value.trim()
+    }
+  ];
+
+  participantFields
+    .querySelectorAll(".participant-card[data-participant-index]")
+    .forEach((card) => {
+      const index = Number(card.dataset.participantIndex);
+
+      if (index === 0) {
+        return;
+      }
+
+      const memberName = card.querySelector(".participant-name").value.trim();
+      const studentId = card
+        .querySelector(".participant-student-id")
+        .value.trim();
+
+      if (!memberName || !studentId) {
+        throw new Error(`${index + 1}번 참여자의 이름과 학번을 입력해 주세요.`);
+      }
+
+      participants.push({
+        member_name: memberName,
+        student_id: studentId
+      });
+    });
+
+  const studentIds = participants.map((participant) => participant.student_id);
+
+  if (new Set(studentIds).size !== studentIds.length) {
+    throw new Error("같은 학번을 두 번 입력할 수 없습니다.");
+  }
+
+  return participants;
+}
+
+function resetHeadcountPicker() {
+  headcountInput.value = "";
+  participantsSection.hidden = true;
+  participantFields.innerHTML = "";
+  participantSummary.textContent = "";
+
+  headcountButtons.forEach((button) => {
+    button.classList.remove("selected");
+    button.setAttribute("aria-pressed", "false");
+  });
 }
 
 async function ensureReservationTeam(profile) {
@@ -182,6 +385,16 @@ document
       return;
     }
 
+    let participants;
+
+    try {
+      participants = collectParticipants();
+    } catch (error) {
+      message.textContent = error.message;
+      message.classList.add("error");
+      return;
+    }
+
     const date =
       document.getElementById("reservation-date").value;
 
@@ -222,10 +435,7 @@ document
           document.getElementById("student-id")
             .value.trim(),
 
-        p_headcount:
-          Number(
-            document.getElementById("headcount").value
-          ),
+        p_headcount: participants.length,
 
         p_purpose:
           document.getElementById("purpose")
@@ -250,12 +460,53 @@ document
       return;
     }
 
+    const reservationResult = Array.isArray(data) ? data[0] : data;
+    const reservationId =
+      reservationResult?.reservation_id ??
+      reservationResult?.id ??
+      reservationResult;
+
+    if (!reservationId) {
+      message.textContent =
+        "예약은 생성됐지만 예약번호를 확인하지 못했습니다. 관리자에게 문의해 주세요.";
+      message.classList.add("error");
+      return;
+    }
+
+    const memberRows = participants.map((participant) => ({
+      reservation_id: reservationId,
+      member_name: participant.member_name,
+      student_id: participant.student_id
+    }));
+
+    const { error: memberError } = await supabase
+      .from("reservation_members")
+      .insert(memberRows);
+
+    if (memberError) {
+      await supabase.rpc("cancel_my_reservation", {
+        p_reservation_id: reservationId
+      });
+
+      message.textContent =
+        `참여자 정보 저장 오류: ${memberError.message}`;
+      message.classList.add("error");
+      return;
+    }
+
     message.textContent =
-      `예약이 완료되었습니다. 예약번호: ${data}`;
+      `예약이 완료되었습니다. 예약번호: ${reservationId}`;
     message.classList.remove("error");
     message.classList.add("success");
 
     event.target.reset();
+    resetHeadcountPicker();
+
+    if (currentProfile) {
+      fillProfile(currentProfile);
+    }
+
+    setDateLimits();
 
     await loadBookedSlots();
   });
