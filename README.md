@@ -6,7 +6,7 @@
 
 - `index.html`: 이용 안내
 - `login.html`: 학번 로그인 및 회원가입
-- `reservation.html`: 팀 생성과 예약 신청
+- `reservation.html`: 예약 신청과 예약 시간 확인
 - `my-reservation.html`: 내 예약, 수료증, 연장 신청, 이용확인서
 - `admin.html`: 사용자와 전체 예약 관리
 - `styles/style.css`: 전체 공통 디자인
@@ -16,8 +16,9 @@
 
 1. Supabase의 `Authentication > Providers > Email`에서 `Confirm email`을 끕니다.
 2. Supabase의 `SQL Editor`에서 `supabase-auto-approve.sql` 전체를 한 번 실행합니다.
-3. `scripts/config.js`의 Supabase URL과 Publishable Key가 현재 프로젝트 값인지 확인합니다.
-4. VS Code에서 `index.html`을 열고 Live Server를 실행합니다.
+3. 참여자 입력 기능을 사용하려면 `supabase-participant-fields.sql` 전체를 한 번 실행합니다.
+4. `scripts/config.js`의 Supabase URL과 Publishable Key가 현재 프로젝트 값인지 확인합니다.
+5. VS Code에서 `index.html`을 열고 Live Server를 실행합니다.
 
 회원가입용 실제 연락 이메일은 `profiles.email`에 저장됩니다. 로그인은 입력한 학번을 내부 인증용 주소로 변환하여 처리합니다.
 
