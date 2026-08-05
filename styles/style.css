@@ -1228,6 +1228,14 @@ input[type="file"]::file-selector-button {
   margin-top: 20px;
 }
 
+.info-grid > .card {
+  height: 100%;
+}
+
+.info-grid > .card + .card {
+  margin-top: 0;
+}
+
 .rule-list {
   display: grid;
   gap: 14px;
