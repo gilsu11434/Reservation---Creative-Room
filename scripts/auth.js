@@ -1,7 +1,5 @@
 import { supabase } from "./config.js";
 
-const AUTH_EMAIL_DOMAIN = "room-reservation.invalid";
-
 const signupForm = document.getElementById("signup-form");
 const loginForm = document.getElementById("login-form");
 const signupMessage = document.getElementById("signup-message");
@@ -15,8 +13,8 @@ function normalizeStudentId(value) {
     .toLowerCase();
 }
 
-function toAuthEmail(studentId) {
-  return `${normalizeStudentId(studentId)}@${AUTH_EMAIL_DOMAIN}`;
+function normalizeEmail(value) {
+  return String(value ?? "").trim().toLowerCase();
 }
 
 function convertAuthError(message = "") {
@@ -27,11 +25,11 @@ function convertAuthError(message = "") {
   }
 
   if (normalized.includes("user already registered")) {
-    return "이미 가입된 학번입니다. 로그인 탭을 이용해 주세요.";
+    return "이미 가입된 이메일입니다. 로그인 탭을 이용해 주세요.";
   }
 
   if (normalized.includes("invalid login credentials")) {
-    return "학번 또는 비밀번호가 올바르지 않습니다.";
+    return "이메일 또는 비밀번호가 올바르지 않습니다.";
   }
 
   if (normalized.includes("password should be")) {
@@ -67,7 +65,7 @@ function activateTab(tabName) {
   document.getElementById("signup-panel").hidden = tabName !== "signup";
 
   const target = document.querySelector(
-    tabName === "login" ? "#login-student-id" : "#signup-name"
+    tabName === "login" ? "#login-email" : "#signup-name"
   );
 
   target?.focus();
@@ -90,7 +88,9 @@ signupForm.addEventListener("submit", async (event) => {
   const studentId = normalizeStudentId(
     document.getElementById("signup-student-id").value
   );
-  const contactEmail = document.getElementById("signup-email").value.trim();
+  const contactEmail = normalizeEmail(
+    document.getElementById("signup-email").value
+  );
   const password = document.getElementById("signup-password").value;
   const passwordConfirm = document.getElementById(
     "signup-password-confirm"
@@ -113,7 +113,7 @@ signupForm.addEventListener("submit", async (event) => {
 
   try {
     const { data, error } = await supabase.auth.signUp({
-      email: toAuthEmail(studentId),
+      email: contactEmail,
       password,
       options: {
         data: {
@@ -176,8 +176,8 @@ signupForm.addEventListener("submit", async (event) => {
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
-  const studentId = normalizeStudentId(
-    document.getElementById("login-student-id").value
+  const loginEmail = normalizeEmail(
+    document.getElementById("login-email").value
   );
   const password = document.getElementById("login-password").value;
 
@@ -186,8 +186,19 @@ loginForm.addEventListener("submit", async (event) => {
   setFormBusy(loginForm, true);
 
   try {
+    const { data: resolvedEmail, error: resolveError } =
+      await supabase.rpc("resolve_login_email", {
+        p_email: loginEmail
+      });
+
+    if (resolveError) {
+      throw new Error(
+        `이메일 로그인 설정 오류: ${resolveError.message}`
+      );
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: toAuthEmail(studentId),
+      email: normalizeEmail(resolvedEmail || loginEmail),
       password
     });
 
