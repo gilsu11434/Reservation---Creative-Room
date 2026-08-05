@@ -13,6 +13,8 @@ const headcountButtons = document.querySelectorAll("[data-headcount]");
 const participantsSection = document.getElementById("participants-section");
 const participantFields = document.getElementById("participant-fields");
 const participantSummary = document.getElementById("participant-summary");
+const startTimeSelect = document.getElementById("start-time");
+const endTimeSelect = document.getElementById("end-time");
 
 document
   .getElementById("logout-button")
@@ -33,6 +35,8 @@ document
 document
   .getElementById("student-id")
   .addEventListener("input", updatePrimaryParticipant);
+
+startTimeSelect.addEventListener("change", updateEndTimeOptions);
 
 async function initialize() {
   currentUser = await getCurrentUser();
@@ -257,6 +261,42 @@ function resetHeadcountPicker() {
     button.classList.remove("selected");
     button.setAttribute("aria-pressed", "false");
   });
+}
+
+function formatHour(hour) {
+  return `${String(hour).padStart(2, "0")}:00`;
+}
+
+function updateEndTimeOptions() {
+  const startHour = Number(startTimeSelect.value.slice(0, 2));
+
+  endTimeSelect.innerHTML = "";
+
+  if (!startTimeSelect.value) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "시작시간을 먼저 선택하세요";
+    endTimeSelect.appendChild(option);
+    endTimeSelect.disabled = true;
+    return;
+  }
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "종료시간을 선택하세요";
+  endTimeSelect.appendChild(placeholder);
+
+  [startHour + 1, startHour + 2]
+    .filter((hour) => hour <= 18)
+    .forEach((hour) => {
+      const value = formatHour(hour);
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = value;
+      endTimeSelect.appendChild(option);
+    });
+
+  endTimeSelect.disabled = false;
 }
 
 async function ensureReservationTeam(profile) {
@@ -501,6 +541,7 @@ document
 
     event.target.reset();
     resetHeadcountPicker();
+    updateEndTimeOptions();
 
     if (currentProfile) {
       fillProfile(currentProfile);
