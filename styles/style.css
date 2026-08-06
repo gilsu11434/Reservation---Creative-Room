@@ -272,6 +272,18 @@ h4 {
   background: var(--surface-soft);
 }
 
+.app-nav .nav-suggestion {
+  border-color: #b7ded4;
+  color: var(--brand-dark);
+  background: var(--surface-accent);
+}
+
+.app-nav .nav-suggestion:hover {
+  border-color: var(--brand);
+  color: #ffffff;
+  background: var(--brand);
+}
+
 .app-nav .nav-primary {
   border-color: var(--brand);
   color: #ffffff;
