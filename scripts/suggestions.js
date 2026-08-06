@@ -9,6 +9,12 @@ const suggestionMessage = document.getElementById(
 );
 const suggestionList = document.getElementById("suggestion-list");
 const suggestionCount = document.getElementById("suggestion-count");
+const suggestionListTitle = document.getElementById(
+  "suggestion-list-title"
+);
+const refreshButton = document.getElementById(
+  "suggestion-refresh-button"
+);
 const authLink = document.getElementById("suggestion-auth-link");
 const submitButton = document.getElementById(
   "suggestion-submit-button"
@@ -31,9 +37,7 @@ let currentUser = null;
 let currentRole = null;
 let suggestions = [];
 
-document
-  .getElementById("suggestion-refresh-button")
-  .addEventListener("click", loadSuggestions);
+refreshButton.addEventListener("click", loadSuggestions);
 
 suggestionForm.addEventListener("submit", submitSuggestion);
 
@@ -58,24 +62,6 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-function maskName(value) {
-  const characters = Array.from(String(value ?? "이용자").trim());
-
-  if (characters.length <= 1) {
-    return `${characters[0] ?? "이"}*`;
-  }
-
-  if (characters.length === 2) {
-    return `${characters[0]}*`;
-  }
-
-  return (
-    characters[0] +
-    "*".repeat(characters.length - 2) +
-    characters.at(-1)
-  );
-}
-
 function formatDateTime(value) {
   if (!value) {
     return "-";
@@ -92,16 +78,28 @@ function showMessage(message, isError = false) {
 
 function canDeleteSuggestion(suggestion) {
   return Boolean(
-    currentUser &&
-    (
-      String(suggestion.user_id) === String(currentUser.id) ||
-      currentRole === "admin"
-    )
+    currentUser && suggestion && currentRole === "admin"
   );
 }
 
+function renderPrivateNotice() {
+  suggestions = [];
+  suggestionCount.textContent = "비공개";
+  suggestionListTitle.textContent = "비공개 건의사항";
+  refreshButton.hidden = true;
+  suggestionList.innerHTML = `
+    <div class="suggestion-empty">
+      <span aria-hidden="true">🔒</span>
+      <strong>작성 내용은 관리자만 확인할 수 있습니다.</strong>
+      <p>제목, 본문, 작성자 정보는 다른 이용자에게 공개되지 않습니다.</p>
+    </div>
+  `;
+}
+
 function renderSuggestions() {
+  suggestionListTitle.textContent = "접수된 건의사항";
   suggestionCount.textContent = `${suggestions.length}건`;
+  refreshButton.hidden = false;
 
   if (suggestions.length === 0) {
     suggestionList.innerHTML = `
@@ -121,7 +119,7 @@ function renderSuggestions() {
           <div>
             <h3>${escapeHtml(suggestion.title)}</h3>
             <p>
-              <span>${escapeHtml(maskName(suggestion.author_name))}</span>
+              <span>${escapeHtml(suggestion.author_name || "이용자")}</span>
               <span aria-hidden="true">·</span>
               <time datetime="${escapeHtml(suggestion.created_at)}">
                 ${escapeHtml(formatDateTime(suggestion.created_at))}
@@ -152,6 +150,11 @@ function renderSuggestions() {
 }
 
 async function loadSuggestions() {
+  if (currentRole !== "admin") {
+    renderPrivateNotice();
+    return;
+  }
+
   suggestionList.setAttribute("aria-busy", "true");
 
   const { data, error } = await supabase
@@ -216,7 +219,7 @@ async function submitSuggestion(event) {
     .insert({ title, content });
 
   submitButton.disabled = false;
-  submitButton.textContent = "게시글 등록";
+  submitButton.textContent = "비공개 접수";
 
   if (error) {
     showMessage(`게시글 등록 오류: ${error.message}`, true);
@@ -224,8 +227,15 @@ async function submitSuggestion(event) {
   }
 
   suggestionForm.reset();
-  showMessage("건의사항이 등록되었습니다.");
-  await loadSuggestions();
+  showMessage(
+    "건의사항이 비공개로 접수되었습니다. 작성 내용은 관리자만 확인할 수 있습니다."
+  );
+
+  if (currentRole === "admin") {
+    await loadSuggestions();
+  } else {
+    renderPrivateNotice();
+  }
 }
 
 async function deleteSuggestion(suggestionId) {
@@ -257,7 +267,11 @@ async function deleteSuggestion(suggestionId) {
   }
 
   showMessage("게시글이 삭제되었습니다.");
-  await loadSuggestions();
+  if (currentRole === "admin") {
+    await loadSuggestions();
+  } else {
+    renderPrivateNotice();
+  }
 }
 
 async function initialize() {
