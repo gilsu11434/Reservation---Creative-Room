@@ -76,28 +76,38 @@ function showMessage(message, isError = false) {
   suggestionMessage.hidden = !message;
 }
 
+function maskName(value) {
+  const characters = Array.from(
+    String(value ?? "이용자").trim()
+  );
+
+  if (characters.length <= 1) {
+    return `${characters[0] ?? "이"}*`;
+  }
+
+  if (characters.length === 2) {
+    return `${characters[0]}*`;
+  }
+
+  return (
+    characters[0] +
+    "*".repeat(characters.length - 2) +
+    characters.at(-1)
+  );
+}
+
 function canDeleteSuggestion(suggestion) {
   return Boolean(
     currentUser && suggestion && currentRole === "admin"
   );
 }
 
-function renderPrivateNotice() {
-  suggestions = [];
-  suggestionCount.textContent = "비공개";
-  suggestionListTitle.textContent = "비공개 건의사항";
-  refreshButton.hidden = true;
-  suggestionList.innerHTML = `
-    <div class="suggestion-empty">
-      <span aria-hidden="true">🔒</span>
-      <strong>작성 내용은 관리자만 확인할 수 있습니다.</strong>
-      <p>제목, 본문, 작성자 정보는 다른 이용자에게 공개되지 않습니다.</p>
-    </div>
-  `;
-}
-
 function renderSuggestions() {
-  suggestionListTitle.textContent = "접수된 건의사항";
+  const isAdmin = currentRole === "admin";
+
+  suggestionListTitle.textContent = isAdmin
+    ? "접수된 건의사항"
+    : "등록된 건의사항";
   suggestionCount.textContent = `${suggestions.length}건`;
   refreshButton.hidden = false;
 
@@ -119,7 +129,10 @@ function renderSuggestions() {
           <div>
             <h3>${escapeHtml(suggestion.title)}</h3>
             <p>
-              <span>${escapeHtml(suggestion.author_name || "이용자")}</span>
+              <span>${escapeHtml(
+                suggestion.masked_author_name ||
+                maskName(suggestion.author_name)
+              )}</span>
               <span aria-hidden="true">·</span>
               <time datetime="${escapeHtml(suggestion.created_at)}">
                 ${escapeHtml(formatDateTime(suggestion.created_at))}
@@ -141,32 +154,49 @@ function renderSuggestions() {
               : ""
           }
         </header>
-        <p class="suggestion-post-content">
-          ${escapeHtml(suggestion.content)}
-        </p>
+        ${
+          isAdmin
+            ? `
+              <p class="suggestion-post-content">
+                ${escapeHtml(suggestion.content)}
+              </p>
+            `
+            : `
+              <p class="suggestion-post-private">
+                <span aria-hidden="true">🔒</span>
+                본문은 관리자만 확인할 수 있습니다.
+              </p>
+            `
+        }
       </article>
     `)
     .join("");
 }
 
 async function loadSuggestions() {
-  if (currentRole !== "admin") {
-    renderPrivateNotice();
-    return;
-  }
-
   suggestionList.setAttribute("aria-busy", "true");
 
-  const { data, error } = await supabase
-    .from("suggestions")
-    .select(`
-      id,
-      user_id,
-      author_name,
-      title,
-      content,
-      created_at
-    `)
+  const query = currentRole === "admin"
+    ? supabase
+      .from("suggestions")
+      .select(`
+        id,
+        user_id,
+        author_name,
+        title,
+        content,
+        created_at
+      `)
+    : supabase
+      .from("suggestion_public_list")
+      .select(`
+        id,
+        masked_author_name,
+        title,
+        created_at
+      `);
+
+  const { data, error } = await query
     .order("created_at", { ascending: false })
     .limit(100);
 
@@ -219,7 +249,7 @@ async function submitSuggestion(event) {
     .insert({ title, content });
 
   submitButton.disabled = false;
-  submitButton.textContent = "비공개 접수";
+  submitButton.textContent = "건의 접수";
 
   if (error) {
     showMessage(`게시글 등록 오류: ${error.message}`, true);
@@ -228,14 +258,10 @@ async function submitSuggestion(event) {
 
   suggestionForm.reset();
   showMessage(
-    "건의사항이 비공개로 접수되었습니다. 작성 내용은 관리자만 확인할 수 있습니다."
+    "건의사항이 접수되었습니다. 제목과 가린 이름은 표시되며 본문은 관리자만 확인할 수 있습니다."
   );
 
-  if (currentRole === "admin") {
-    await loadSuggestions();
-  } else {
-    renderPrivateNotice();
-  }
+  await loadSuggestions();
 }
 
 async function deleteSuggestion(suggestionId) {
@@ -267,11 +293,7 @@ async function deleteSuggestion(suggestionId) {
   }
 
   showMessage("게시글이 삭제되었습니다.");
-  if (currentRole === "admin") {
-    await loadSuggestions();
-  } else {
-    renderPrivateNotice();
-  }
+  await loadSuggestions();
 }
 
 async function initialize() {
