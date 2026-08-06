@@ -14,6 +14,12 @@ const calendarMonthLabel = document.getElementById(
 const adminMessage = document.getElementById(
   "admin-message"
 );
+const reservationDetailDialog = document.getElementById(
+  "reservation-detail-dialog"
+);
+const reservationDetailContent = document.getElementById(
+  "reservation-detail-content"
+);
 
 const SEOUL_TIME_ZONE = "Asia/Seoul";
 const WEEKDAY_LABELS = [
@@ -40,6 +46,30 @@ const seoulTimeFormatter = new Intl.DateTimeFormat(
   "ko-KR",
   {
     timeZone: SEOUL_TIME_ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+  }
+);
+
+const seoulDateDetailFormatter = new Intl.DateTimeFormat(
+  "ko-KR",
+  {
+    timeZone: SEOUL_TIME_ZONE,
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "long"
+  }
+);
+
+const seoulDateTimeFormatter = new Intl.DateTimeFormat(
+  "ko-KR",
+  {
+    timeZone: SEOUL_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
     hourCycle: "h23"
@@ -76,6 +106,34 @@ document
     setVisibleMonthToToday();
     renderCalendar();
   });
+
+document
+  .getElementById("reservation-detail-close")
+  .addEventListener("click", closeReservationDetails);
+
+calendar.addEventListener("click", (event) => {
+  const reservationButton = event.target.closest(
+    "[data-reservation-id]"
+  );
+
+  if (!reservationButton) {
+    return;
+  }
+
+  openReservationDetails(
+    reservationButton.dataset.reservationId
+  );
+});
+
+reservationDetailDialog.addEventListener("click", (event) => {
+  if (event.target === reservationDetailDialog) {
+    closeReservationDetails();
+  }
+});
+
+reservationDetailDialog.addEventListener("close", () => {
+  document.body.classList.remove("modal-open");
+});
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -134,6 +192,228 @@ function formatTime(value) {
   return seoulTimeFormatter.format(new Date(value));
 }
 
+function formatDateDetail(value) {
+  if (!value) {
+    return "-";
+  }
+
+  return seoulDateDetailFormatter.format(new Date(value));
+}
+
+function formatDateTime(value) {
+  if (!value) {
+    return "-";
+  }
+
+  return seoulDateTimeFormatter.format(new Date(value));
+}
+
+function formatDuration(startValue, endValue) {
+  const start = new Date(startValue).getTime();
+  const end = new Date(endValue).getTime();
+  const hours = (end - start) / (60 * 60 * 1000);
+
+  if (!Number.isFinite(hours) || hours <= 0) {
+    return "-";
+  }
+
+  return `${Number(hours.toFixed(2))}시간`;
+}
+
+function getStatusLabel(status) {
+  const labels = {
+    documents_pending: "수료증 확인 대기",
+    ready: "이용 가능",
+    completed: "이용 완료",
+    cancelled: "취소"
+  };
+
+  return labels[status] ?? status ?? "상태 미확인";
+}
+
+function getCertificateStatus(member) {
+  if (member.certificate_verified) {
+    return {
+      label: "확인 완료",
+      className: "status-ready"
+    };
+  }
+
+  if (member.safety_certificate_path) {
+    return {
+      label: "제출 완료",
+      className: "status-documents_pending"
+    };
+  }
+
+  return {
+    label: "미제출",
+    className: "status-cancelled"
+  };
+}
+
+function renderDetailItem(label, value, className = "") {
+  return `
+    <div class="admin-detail-item${className ? ` ${className}` : ""}">
+      <dt>${escapeHtml(label)}</dt>
+      <dd>${escapeHtml(value || "-")}</dd>
+    </div>
+  `;
+}
+
+function renderParticipants(reservation) {
+  const participants = reservation.reservation_members ?? [];
+
+  if (participants.length === 0) {
+    return `
+      <p class="admin-detail-empty">
+        저장된 참여자 정보가 없습니다.
+      </p>
+    `;
+  }
+
+  return `
+    <div class="admin-participant-table-wrap">
+      <table class="admin-participant-table">
+        <thead>
+          <tr>
+            <th scope="col">구분</th>
+            <th scope="col">이름</th>
+            <th scope="col">학번</th>
+            <th scope="col">이메일</th>
+            <th scope="col">수료증</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${participants.map((member, index) => {
+            const certificateStatus = getCertificateStatus(member);
+            const isRequester =
+              String(member.member_email ?? "").toLowerCase() ===
+              String(reservation.requester_email ?? "").toLowerCase();
+
+            return `
+              <tr>
+                <td>${isRequester ? "예약자" : `참여자 ${index + 1}`}</td>
+                <td><strong>${escapeHtml(member.member_name || "-")}</strong></td>
+                <td>${escapeHtml(member.student_id || "-")}</td>
+                <td>${escapeHtml(member.member_email || "-")}</td>
+                <td>
+                  <span class="status-badge ${certificateStatus.className}">
+                    ${certificateStatus.label}
+                  </span>
+                </td>
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function openReservationDetails(reservationId) {
+  const reservation = allReservations.find(
+    (item) => String(item.id) === String(reservationId)
+  );
+
+  if (!reservation) {
+    showMessage("예약 상세정보를 찾지 못했습니다.", true);
+    return;
+  }
+
+  const effectiveEnd =
+    reservation.effective_end_at || reservation.end_at;
+  const hasExtension =
+    new Date(effectiveEnd).getTime() >
+    new Date(reservation.end_at).getTime();
+  const status = escapeHtml(reservation.status || "unknown");
+
+  reservationDetailContent.innerHTML = `
+    <section class="admin-detail-summary">
+      <div>
+        <span class="admin-detail-date">
+          ${escapeHtml(formatDateDetail(reservation.start_at))}
+        </span>
+        <strong>
+          ${escapeHtml(formatTime(reservation.start_at))}
+          <span aria-hidden="true">~</span>
+          ${escapeHtml(formatTime(effectiveEnd))}
+        </strong>
+        <small>
+          이용시간 ${escapeHtml(formatDuration(reservation.start_at, effectiveEnd))}
+          ${hasExtension ? " · 연장 포함" : ""}
+        </small>
+      </div>
+      <span class="status-badge status-${status}">
+        ${escapeHtml(getStatusLabel(reservation.status))}
+      </span>
+    </section>
+
+    <section class="admin-detail-section">
+      <h3>예약자 정보</h3>
+      <dl class="admin-detail-grid">
+        ${renderDetailItem("예약자 이름", reservation.requester_name)}
+        ${renderDetailItem("이메일", reservation.requester_email)}
+        ${renderDetailItem("전화번호", reservation.requester_phone)}
+        ${renderDetailItem("학과", reservation.department)}
+        ${renderDetailItem("학번", reservation.student_id)}
+        ${renderDetailItem(
+          "사용 인원",
+          reservation.headcount == null
+            ? "-"
+            : `${reservation.headcount}명`
+        )}
+      </dl>
+    </section>
+
+    <section class="admin-detail-section">
+      <h3>이용 정보</h3>
+      <dl class="admin-detail-grid">
+        ${renderDetailItem("사용할 장비", reservation.equipment || "없음")}
+        ${renderDetailItem(
+          "예약 신청 일시",
+          formatDateTime(reservation.created_at)
+        )}
+        ${renderDetailItem(
+          "사용 목적",
+          reservation.purpose,
+          "is-full"
+        )}
+        ${renderDetailItem(
+          "예약번호",
+          String(reservation.id ?? "-"),
+          "is-full"
+        )}
+      </dl>
+    </section>
+
+    <section class="admin-detail-section">
+      <div class="admin-detail-section-heading">
+        <h3>참여자 정보</h3>
+        <span>${reservation.reservation_members?.length ?? 0}명</span>
+      </div>
+      ${renderParticipants(reservation)}
+    </section>
+  `;
+
+  document.body.classList.add("modal-open");
+
+  if (typeof reservationDetailDialog.showModal === "function") {
+    reservationDetailDialog.showModal();
+  } else {
+    reservationDetailDialog.setAttribute("open", "");
+  }
+}
+
+function closeReservationDetails() {
+  if (typeof reservationDetailDialog.close === "function") {
+    reservationDetailDialog.close();
+  } else {
+    reservationDetailDialog.removeAttribute("open");
+    document.body.classList.remove("modal-open");
+  }
+}
+
 function setVisibleMonthToToday() {
   const today = getDateParts();
   visibleYear = today.year;
@@ -181,7 +461,12 @@ function renderReservation(reservation) {
   );
 
   return `
-    <div class="calendar-reservation-item">
+    <button
+      type="button"
+      class="calendar-reservation-item"
+      data-reservation-id="${escapeHtml(reservation.id)}"
+      aria-label="${escapeHtml(requesterName)} ${escapeHtml(startTime)}부터 ${escapeHtml(endTime)}까지 예약 상세정보 보기"
+    >
       <strong class="calendar-reservation-name">
         ${escapeHtml(requesterName)}
       </strong>
@@ -192,7 +477,8 @@ function renderReservation(reservation) {
         <span aria-hidden="true">~</span>
         <span>${escapeHtml(endTime)}</span>
       </span>
-    </div>
+      <span class="calendar-reservation-more">상세 보기</span>
+    </button>
   `;
 }
 
@@ -292,11 +578,8 @@ async function loadReservations() {
   const { data, error } = await supabase
     .from("reservations")
     .select(`
-      requester_name,
-      start_at,
-      end_at,
-      effective_end_at,
-      status
+      *,
+      reservation_members(*)
     `)
     .order("start_at", { ascending: true });
 
