@@ -932,7 +932,11 @@ async function loadBookedSlots() {
     bookedSlots = [];
     bookedSlotsLoaded = false;
     bookedSlotsLoadFailed = true;
-    container.textContent = error.message;
+
+    if (container) {
+      container.textContent = error.message;
+    }
+
     updateTimeSlotAvailability();
     return;
   }
@@ -941,6 +945,10 @@ async function loadBookedSlots() {
   bookedSlotsLoaded = true;
   bookedSlotsLoadFailed = false;
   updateTimeSlotAvailability();
+
+  if (!container) {
+    return;
+  }
 
   if (bookedSlots.length === 0) {
     container.textContent = "현재 예약된 시간이 없습니다.";
