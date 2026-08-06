@@ -1282,9 +1282,8 @@ input[type="file"]::file-selector-button {
 /* Reservation */
 .reservation-layout {
   display: grid;
-  grid-template-columns: minmax(260px, 0.72fr) minmax(0, 1.55fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  gap: 20px;
 }
 
 .sidebar-stack {
