@@ -1455,6 +1455,179 @@ input[type="file"]::file-selector-button {
   justify-content: flex-end;
 }
 
+/* Suggestions */
+.suggestion-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.45fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.suggestion-form-card {
+  position: sticky;
+  top: 92px;
+}
+
+.suggestion-form-card textarea {
+  min-height: 210px;
+}
+
+.suggestion-login-prompt {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 20px;
+  border: 1px solid #cfe8e1;
+  border-radius: 13px;
+  background: var(--surface-accent);
+}
+
+.suggestion-login-prompt[hidden] {
+  display: none;
+}
+
+.suggestion-login-prompt p {
+  margin: 0 0 8px;
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.suggestion-list-card {
+  min-width: 0;
+}
+
+.suggestion-list-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.suggestion-list-heading h2,
+.suggestion-list-heading p {
+  margin-bottom: 0;
+}
+
+.suggestion-list-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.suggestion-refresh-button {
+  min-height: 36px;
+  padding: 7px 11px;
+  font-size: 12px;
+}
+
+.suggestion-list {
+  display: grid;
+  gap: 12px;
+  padding-top: 20px;
+}
+
+.suggestion-post {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--surface);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.suggestion-post:hover {
+  border-color: #cfe0db;
+  box-shadow: var(--shadow-sm);
+}
+
+.suggestion-post-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.suggestion-post-header h3 {
+  overflow-wrap: anywhere;
+  margin-bottom: 5px;
+  font-size: 17px;
+}
+
+.suggestion-post-header p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+.suggestion-post-content {
+  overflow-wrap: anywhere;
+  margin: 16px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  color: var(--text-soft);
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
+
+.suggestion-delete-button {
+  min-height: 34px;
+  padding: 6px 10px;
+  border-color: #f0b4ae;
+  color: var(--danger-dark);
+  background: #fff5f4;
+  font-size: 12px;
+}
+
+.suggestion-delete-button:hover {
+  border-color: var(--danger);
+  color: #ffffff;
+  background: var(--danger);
+}
+
+.suggestion-empty {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  padding: 48px 20px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 13px;
+  color: var(--text-soft);
+  background: var(--surface-soft);
+  text-align: center;
+}
+
+.suggestion-empty > span {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 5px;
+  border-radius: 50%;
+  color: var(--brand-dark);
+  background: var(--brand-soft);
+  font-size: 20px;
+}
+
+.suggestion-empty strong {
+  color: var(--text);
+}
+
+.suggestion-empty p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.suggestion-empty.is-error {
+  border-color: #f0b4ae;
+  color: var(--danger-dark);
+  background: #fff5f4;
+}
+
 /* Admin */
 .admin-calendar-card {
   overflow: hidden;
@@ -2048,6 +2221,14 @@ input[type="file"]::file-selector-button {
     grid-template-columns: 1fr;
   }
 
+  .suggestion-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .suggestion-form-card {
+    position: static;
+  }
+
   .sidebar-stack {
     position: static;
     display: grid;
@@ -2102,6 +2283,10 @@ input[type="file"]::file-selector-button {
 
   .page-heading {
     display: block;
+  }
+
+  .page-heading > .button {
+    margin-top: 16px;
   }
 
   .card,
@@ -2161,6 +2346,20 @@ input[type="file"]::file-selector-button {
 
   .admin-detail-grid {
     grid-template-columns: 1fr;
+  }
+
+  .suggestion-list-heading,
+  .suggestion-post-header {
+    align-items: flex-start;
+  }
+
+  .suggestion-list-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .suggestion-form-card textarea {
+    min-height: 170px;
   }
 
   .form-grid,
