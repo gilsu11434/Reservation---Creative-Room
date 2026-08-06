@@ -21,7 +21,7 @@ function convertAuthError(message = "") {
   const normalized = message.toLowerCase();
 
   if (normalized.includes("email rate limit exceeded")) {
-    return "이메일 발송 한도를 초과했습니다. Supabase에서 Confirm email을 끈 뒤 잠시 후 다시 시도해 주세요.";
+    return "인증메일 발송 한도를 초과했습니다. 잠시 후 다시 시도해 주세요.";
   }
 
   if (normalized.includes("user already registered")) {
@@ -30,6 +30,17 @@ function convertAuthError(message = "") {
 
   if (normalized.includes("invalid login credentials")) {
     return "이메일 또는 비밀번호가 올바르지 않습니다.";
+  }
+
+  if (normalized.includes("email not confirmed")) {
+    return "이메일 인증이 완료되지 않았습니다. 받은 인증메일의 링크를 먼저 눌러주세요.";
+  }
+
+  if (
+    normalized.includes("otp_expired") ||
+    normalized.includes("token has expired")
+  ) {
+    return "인증 링크가 만료되었습니다. 인증메일을 다시 요청해 주세요.";
   }
 
   if (normalized.includes("password should be")) {
@@ -52,6 +63,81 @@ function setFormBusy(form, busy) {
   submitButton.textContent = busy
     ? "처리 중..."
     : submitButton.dataset.defaultText;
+}
+
+async function ensureUserProfile(user, signupValues = {}) {
+  const metadata = user.user_metadata ?? {};
+  const { data: existingProfile, error: loadError } = await supabase
+    .from("profiles")
+    .select(`
+      id,
+      email,
+      full_name,
+      phone,
+      department,
+      student_id
+    `)
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (loadError) {
+    throw loadError;
+  }
+
+  const profile = {
+    id: user.id,
+    email: normalizeEmail(
+      existingProfile?.email ||
+      signupValues.contactEmail ||
+      metadata.contact_email ||
+      user.email
+    ),
+    full_name:
+      existingProfile?.full_name ||
+      signupValues.fullName ||
+      metadata.full_name ||
+      "",
+    phone:
+      existingProfile?.phone ||
+      signupValues.phone ||
+      metadata.phone ||
+      "",
+    department:
+      existingProfile?.department ||
+      signupValues.department ||
+      metadata.department ||
+      "",
+    student_id:
+      existingProfile?.student_id ||
+      signupValues.studentId ||
+      metadata.student_id ||
+      "",
+    updated_at: new Date().toISOString()
+  };
+
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .upsert(profile, { onConflict: "id" });
+
+  if (profileError) {
+    throw profileError;
+  }
+}
+
+async function getSignedInDestination(userId) {
+  const { data: permission, error } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return permission?.role === "admin"
+    ? "./admin.html"
+    : "./reservation.html";
 }
 
 function activateTab(tabName) {
@@ -116,6 +202,10 @@ signupForm.addEventListener("submit", async (event) => {
       email: contactEmail,
       password,
       options: {
+        emailRedirectTo: new URL(
+          "./login.html",
+          window.location.href
+        ).href,
         data: {
           full_name: fullName,
           phone,
@@ -135,27 +225,22 @@ signupForm.addEventListener("submit", async (event) => {
     }
 
     if (!data.session) {
-      throw new Error(
-        "로그인 세션이 생성되지 않았습니다. Supabase의 Confirm email 설정을 꺼주세요."
+      showFormMessage(
+        signupMessage,
+        `${contactEmail}로 인증메일을 발송했습니다. ` +
+        "메일의 인증 링크를 누른 후 로그인해 주세요.",
+        "success"
       );
+      return;
     }
 
-    const { error: profileError } = await supabase.from("profiles").upsert(
-      {
-        id: data.user.id,
-        email: contactEmail,
-        full_name: fullName,
-        phone,
-        department,
-        student_id: studentId,
-        updated_at: new Date().toISOString()
-      },
-      { onConflict: "id" }
-    );
-
-    if (profileError) {
-      throw profileError;
-    }
+    await ensureUserProfile(data.user, {
+      contactEmail,
+      fullName,
+      phone,
+      department,
+      studentId
+    });
 
     showFormMessage(
       signupMessage,
@@ -206,24 +291,69 @@ loginForm.addEventListener("submit", async (event) => {
       throw error;
     }
 
-    const { data: permission, error: permissionError } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", data.user.id)
-      .maybeSingle();
-
-    if (permissionError) {
-      throw permissionError;
-    }
+    await ensureUserProfile(data.user);
+    const destination = await getSignedInDestination(data.user.id);
 
     showFormMessage(loginMessage, "로그인되었습니다.", "success");
 
-    window.location.replace(
-      permission?.role === "admin" ? "./admin.html" : "./reservation.html"
-    );
+    window.location.replace(destination);
   } catch (error) {
     showFormMessage(loginMessage, convertAuthError(error.message));
   } finally {
     setFormBusy(loginForm, false);
   }
 });
+
+async function completeEmailConfirmation() {
+  const urlParameters = new URLSearchParams(window.location.search);
+  const hashParameters = new URLSearchParams(
+    window.location.hash.replace(/^#/, "")
+  );
+  const callbackError =
+    urlParameters.get("error_description") ||
+    hashParameters.get("error_description");
+
+  if (callbackError) {
+    activateTab("login");
+    showFormMessage(
+      loginMessage,
+      convertAuthError(callbackError)
+    );
+    return;
+  }
+
+  const {
+    data: { session },
+    error
+  } = await supabase.auth.getSession();
+
+  if (error || !session?.user) {
+    return;
+  }
+
+  try {
+    await ensureUserProfile(session.user);
+    const destination = await getSignedInDestination(
+      session.user.id
+    );
+
+    activateTab("login");
+    showFormMessage(
+      loginMessage,
+      "이메일 인증이 완료되었습니다. 예약 페이지로 이동합니다.",
+      "success"
+    );
+
+    window.setTimeout(() => {
+      window.location.replace(destination);
+    }, 800);
+  } catch (confirmationError) {
+    activateTab("login");
+    showFormMessage(
+      loginMessage,
+      `인증 후 회원정보 저장 오류: ${confirmationError.message}`
+    );
+  }
+}
+
+completeEmailConfirmation();
