@@ -75,6 +75,27 @@ using (
   )
 );
 
+-- 일반 이용자에게는 제목, 가려진 작성자 이름, 작성일만 제공합니다.
+-- 본문(content)과 사용자 식별값(user_id)은 이 View에 포함하지 않습니다.
+create or replace view public.suggestion_public_list
+with (security_barrier = true)
+as
+select
+  suggestion.id,
+  suggestion.title,
+  case
+    when char_length(trim(suggestion.author_name)) <= 1 then
+      left(trim(suggestion.author_name), 1) || '*'
+    when char_length(trim(suggestion.author_name)) = 2 then
+      left(trim(suggestion.author_name), 1) || '*'
+    else
+      left(trim(suggestion.author_name), 1)
+      || repeat('*', char_length(trim(suggestion.author_name)) - 2)
+      || right(trim(suggestion.author_name), 1)
+  end as masked_author_name,
+  suggestion.created_at
+from public.suggestions as suggestion;
+
 drop policy if exists "suggestions_insert_authenticated"
 on public.suggestions;
 
@@ -105,3 +126,9 @@ using (
 
 revoke all on table public.suggestions from anon, authenticated;
 grant select, insert, delete on table public.suggestions to authenticated;
+
+revoke all on table public.suggestion_public_list
+from public, anon, authenticated;
+
+grant select on table public.suggestion_public_list
+to anon, authenticated;
