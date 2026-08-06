@@ -9,6 +9,7 @@
 - `reservation.html`: 예약 신청과 예약 시간 확인
 - `my-reservation.html`: 내 예약, 수료증, 연장 신청, 이용확인서
 - `admin.html`: 사용자와 전체 예약 관리
+- `suggestions.html`: 건의사항 작성 및 게시글 목록
 - `styles/style.css`: 전체 공통 디자인
 - `scripts`: Supabase 연결과 페이지 기능
 
@@ -23,8 +24,9 @@
 7. 참여자 개인별 주간 4시간 제한을 위해 `supabase-participant-weekly-limit.sql` 전체를 한 번 실행합니다.
 8. 예약 가능 범위를 14일로 적용하려면 `supabase-reservation-window-14-days.sql` 전체를 한 번 실행합니다.
 9. 관리자 예약 상세화면에서 참여자 정보를 확인하려면 `supabase-admin-reservation-details.sql` 전체를 한 번 실행합니다.
-10. `scripts/config.js`의 Supabase URL과 Publishable Key가 현재 프로젝트 값인지 확인합니다.
-11. VS Code에서 `index.html`을 열고 Live Server를 실행합니다.
+10. 건의사항 게시판을 사용하려면 `supabase-suggestions.sql` 전체를 한 번 실행합니다.
+11. `scripts/config.js`의 Supabase URL과 Publishable Key가 현재 프로젝트 값인지 확인합니다.
+12. VS Code에서 `index.html`을 열고 Live Server를 실행합니다.
 
 신규 회원은 가입한 이메일로 로그인합니다. 기존 학번 기반 계정도 `profiles.email`에 저장된 이메일로 로그인할 수 있습니다.
 
