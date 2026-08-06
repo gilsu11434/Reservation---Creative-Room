@@ -55,14 +55,25 @@ before insert on public.suggestions
 for each row
 execute function public.prepare_suggestion_author();
 
+-- 이전 공개 열람 정책을 제거하고 관리자 전용 열람 정책으로 교체합니다.
 drop policy if exists "suggestions_read_all"
 on public.suggestions;
 
-create policy "suggestions_read_all"
+drop policy if exists "suggestions_read_admin"
+on public.suggestions;
+
+create policy "suggestions_read_admin"
 on public.suggestions
 for select
-to anon, authenticated
-using (true);
+to authenticated
+using (
+  exists (
+    select 1
+    from public.user_roles as user_role
+    where user_role.user_id = auth.uid()
+      and user_role.role::text = 'admin'
+  )
+);
 
 drop policy if exists "suggestions_insert_authenticated"
 on public.suggestions;
@@ -76,13 +87,15 @@ with check (user_id = auth.uid());
 drop policy if exists "suggestions_delete_owner_or_admin"
 on public.suggestions;
 
-create policy "suggestions_delete_owner_or_admin"
+drop policy if exists "suggestions_delete_admin"
+on public.suggestions;
+
+create policy "suggestions_delete_admin"
 on public.suggestions
 for delete
 to authenticated
 using (
-  user_id = auth.uid()
-  or exists (
+  exists (
     select 1
     from public.user_roles as user_role
     where user_role.user_id = auth.uid()
@@ -91,5 +104,4 @@ using (
 );
 
 revoke all on table public.suggestions from anon, authenticated;
-grant select on table public.suggestions to anon, authenticated;
-grant insert, delete on table public.suggestions to authenticated;
+grant select, insert, delete on table public.suggestions to authenticated;
