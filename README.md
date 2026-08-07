@@ -28,10 +28,17 @@
     제목과 가운데가 `*`로 가려진 작성자는 공개되며 본문은 관리자 계정만 조회할 수 있습니다.
 11. 수료증과 이용확인서 업로드를 위해 `supabase-storage-buckets.sql` 전체를 한 번 실행합니다.
     실행 후 Storage에 `safety-certificates`, `usage-reports` Bucket이 생성되었는지 확인합니다.
-12. `scripts/config.js`의 Supabase URL과 Publishable Key가 현재 프로젝트 값인지 확인합니다.
-13. VS Code에서 `index.html`을 열고 Live Server를 실행합니다.
+12. 이용확인서 제출 기록을 저장할 수 있도록 `supabase-usage-reports-policy.sql` 전체를 한 번 실행합니다.
+    마지막 조회 결과에 `usage_reports_insert_by_owner` 정책이 보이면 정상입니다.
+13. `scripts/config.js`의 Supabase URL과 Publishable Key가 현재 프로젝트 값인지 확인합니다.
+14. VS Code에서 `index.html`을 열고 Live Server를 실행합니다.
 
 신규 회원은 가입한 이메일로 로그인합니다. 기존 학번 기반 계정도 `profiles.email`에 저장된 이메일로 로그인할 수 있습니다.
+
+## 이용확인서 양식
+
+메인 페이지의 `이용확인서 양식 다운로드` 버튼을 누르면 `forms/usage-report-form.html`을 내려받을 수 있습니다.
+파일을 브라우저로 열어 내용을 입력한 다음 `인쇄 · PDF로 저장` 버튼을 눌러 PDF로 저장하고, `내 예약` 페이지에서 제출하세요.
 
 ## GitHub Pages 반영
 
