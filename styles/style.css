@@ -2146,6 +2146,12 @@ input[type="file"]::file-selector-button {
   font-size: 11px;
 }
 
+.admin-certificate-note {
+  flex-basis: 100%;
+  color: var(--danger-dark);
+  font-size: 11px;
+}
+
 .admin-report-panel {
   display: grid;
   gap: 14px;

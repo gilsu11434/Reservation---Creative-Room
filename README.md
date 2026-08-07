@@ -13,6 +13,7 @@
 - `styles/style.css`: 전체 공통 디자인
 - `scripts`: Supabase 연결과 페이지 기능
 - `supabase-reservation-approval-workflow.sql`: 예약·이용확인서 관리자 승인 흐름
+- `supabase-certificate-review.sql`: 수료증 경로 저장과 관리자 승인·반려
 
 ## 최초 설정
 
@@ -31,10 +32,11 @@
     실행 후 Storage에 `safety-certificates`, `usage-reports` Bucket이 생성되었는지 확인합니다.
 12. 이용확인서 제출 기록을 저장할 수 있도록 `supabase-usage-reports-policy.sql` 전체를 한 번 실행합니다.
     마지막 조회 결과에 `usage_reports_insert_by_owner` 정책이 보이면 정상입니다.
-13. 예약 승인제와 이용확인서 승인 후 다음 예약 기능을 위해 `supabase-reservation-approval-workflow.sql` 전체를 한 번 실행합니다.
+13. 수료증 저장과 관리자 승인 기능을 위해 `supabase-certificate-review.sql` 전체를 한 번 실행합니다.
+14. 예약 승인제와 이용확인서 승인 후 다음 예약 기능을 위해 `supabase-reservation-approval-workflow.sql` 전체를 한 번 실행합니다.
     기존 예약은 그대로 유지되며, 이 SQL을 실행한 뒤 만들어지는 예약부터 새 승인 흐름이 적용됩니다.
-14. `scripts/config.js`의 Supabase URL과 Publishable Key가 현재 프로젝트 값인지 확인합니다.
-15. VS Code에서 `index.html`을 열고 Live Server를 실행합니다.
+15. `scripts/config.js`의 Supabase URL과 Publishable Key가 현재 프로젝트 값인지 확인합니다.
+16. VS Code에서 `index.html`을 열고 Live Server를 실행합니다.
 
 신규 회원은 가입한 이메일로 로그인합니다. 기존 학번 기반 계정도 `profiles.email`에 저장된 이메일로 로그인할 수 있습니다.
 
@@ -47,9 +49,10 @@
 
 1. 사용자가 예약을 신청하면 예약 시간은 즉시 다른 사용자에게 예약 불가로 표시되고, 예약 상태는 `승인 대기`가 됩니다.
 2. 관리자가 달력의 예약 건을 눌러 예약을 승인하거나 거절합니다. 거절한 예약 시간은 다시 예약할 수 있습니다.
-3. 사용자는 승인된 예약의 이용 종료 후 이용확인서를 제출합니다.
-4. 관리자가 이용확인서를 승인하면 해당 예약이 완료되고 사용자는 다음 예약을 신청할 수 있습니다.
-5. 수료증과 이용확인서는 관리자 상세화면에서 바로 내려받을 수 있습니다.
+3. 관리자는 예약 상세화면에서 참여자별 수료증을 확인하고 승인하거나 반려합니다.
+4. 사용자는 승인된 예약의 이용 종료 후 이용확인서를 제출합니다.
+5. 관리자가 이용확인서를 승인하면 해당 예약이 완료되고 사용자는 다음 예약을 신청할 수 있습니다.
+6. 수료증과 이용확인서는 관리자 상세화면에서 바로 보거나 내려받을 수 있습니다.
 
 ## GitHub Pages 반영
 

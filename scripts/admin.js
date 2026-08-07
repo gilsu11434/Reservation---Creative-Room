@@ -154,6 +154,15 @@ reservationDetailContent.addEventListener("click", async (event) => {
     return;
   }
 
+  const certificateDecisionButton = event.target.closest(
+    "[data-certificate-decision]"
+  );
+
+  if (certificateDecisionButton) {
+    await reviewCertificate(certificateDecisionButton);
+    return;
+  }
+
   const reportDecisionButton = event.target.closest(
     "[data-report-decision]"
   );
@@ -333,23 +342,34 @@ function getPathExtension(path) {
 }
 
 function getCertificateStatus(member) {
-  if (member.certificate_verified) {
+  if (!member.safety_certificate_path) {
     return {
-      label: "확인 완료",
-      className: "status-ready"
+      status: "missing",
+      label: "미제출",
+      className: "status-cancelled"
     };
   }
 
-  if (member.safety_certificate_path) {
-    return {
-      label: "제출 완료",
+  const status = member.certificate_review_status ??
+    (member.certificate_verified ? "approved" : "pending");
+  const statuses = {
+    pending: {
+      label: "승인 대기",
       className: "status-documents_pending"
-    };
-  }
+    },
+    approved: {
+      label: "승인 완료",
+      className: "status-ready"
+    },
+    rejected: {
+      label: "반려",
+      className: "status-cancelled"
+    }
+  };
 
   return {
-    label: "미제출",
-    className: "status-cancelled"
+    status,
+    ...(statuses[status] ?? statuses.pending)
   };
 }
 
@@ -366,6 +386,10 @@ async function downloadPrivateFile(button) {
   const bucket = button.dataset.downloadBucket;
   const path = button.dataset.downloadPath;
   const fileName = button.dataset.downloadName;
+  const fileAction = button.dataset.fileAction ?? "download";
+  const previewWindow = fileAction === "view"
+    ? window.open("about:blank", "_blank")
+    : null;
 
   if (!bucket || !path || !fileName) {
     showMessage("다운로드할 파일 정보가 올바르지 않습니다.", true);
@@ -384,20 +408,76 @@ async function downloadPrivateFile(button) {
     }
 
     const objectUrl = URL.createObjectURL(data);
-    const link = document.createElement("a");
-    link.href = objectUrl;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => {
-      URL.revokeObjectURL(objectUrl);
-    }, 1000);
+
+    if (fileAction === "view" && previewWindow) {
+      previewWindow.location.href = objectUrl;
+      window.setTimeout(() => {
+        URL.revokeObjectURL(objectUrl);
+      }, 60000);
+    } else {
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => {
+        URL.revokeObjectURL(objectUrl);
+      }, 1000);
+    }
   } catch (error) {
+    previewWindow?.close();
     showMessage(`파일 다운로드 오류: ${error.message}`, true);
   } finally {
     button.disabled = false;
   }
+}
+
+async function reviewCertificate(button) {
+  const memberId = button.dataset.memberId;
+  const reservationId = button.dataset.reservationId;
+  const decision = button.dataset.certificateDecision;
+  const actionLabel = decision === "approved" ? "승인" : "반려";
+
+  if (!confirm(`이 수료증을 ${actionLabel}하시겠습니까?`)) {
+    return;
+  }
+
+  const note = prompt(
+    decision === "approved"
+      ? "관리자 메모가 있으면 입력해 주세요. (선택)"
+      : "반려 사유를 입력해 주세요.",
+    ""
+  );
+
+  if (note === null) {
+    return;
+  }
+
+  if (decision === "rejected" && !note.trim()) {
+    alert("반려 사유를 입력해 주세요.");
+    return;
+  }
+
+  button.disabled = true;
+
+  const { error } = await supabase.rpc(
+    "admin_review_certificate",
+    {
+      p_member_id: memberId,
+      p_decision: decision,
+      p_note: note.trim() || null
+    }
+  );
+
+  if (error) {
+    showMessage(`수료증 ${actionLabel} 오류: ${error.message}`, true);
+    button.disabled = false;
+    return;
+  }
+
+  await loadReservations();
+  openReservationDetails(reservationId);
 }
 
 async function reviewReservation(button) {
@@ -542,10 +622,40 @@ function renderParticipants(reservation) {
                             data-download-bucket="safety-certificates"
                             data-download-path="${escapeHtml(member.safety_certificate_path)}"
                             data-download-name="${escapeHtml(certificateDownloadName)}"
+                            data-file-action="view"
+                          >파일 보기</button>
+                          <button
+                            type="button"
+                            class="button-secondary admin-download-button"
+                            data-download-bucket="safety-certificates"
+                            data-download-path="${escapeHtml(member.safety_certificate_path)}"
+                            data-download-name="${escapeHtml(certificateDownloadName)}"
+                            data-file-action="download"
                           >다운로드</button>
+                          ${certificateStatus.status !== "approved"
+                            ? `
+                              <button
+                                type="button"
+                                class="danger-button admin-download-button"
+                                data-reservation-id="${escapeHtml(reservation.id)}"
+                                data-member-id="${escapeHtml(member.id)}"
+                                data-certificate-decision="rejected"
+                              >반려</button>
+                              <button
+                                type="button"
+                                class="admin-download-button"
+                                data-reservation-id="${escapeHtml(reservation.id)}"
+                                data-member-id="${escapeHtml(member.id)}"
+                                data-certificate-decision="approved"
+                              >승인</button>
+                            `
+                            : ""}
                         `
                         : ""
                     }
+                    ${member.certificate_review_note
+                      ? `<small class="admin-certificate-note">관리자 의견: ${escapeHtml(member.certificate_review_note)}</small>`
+                      : ""}
                   </div>
                 </td>
               </tr>
@@ -731,6 +841,15 @@ function openReservationDetails(reservationId) {
                   data-download-bucket="usage-reports"
                   data-download-path="${escapeHtml(latestReport.file_path)}"
                   data-download-name="${escapeHtml(reportDownloadName)}"
+                  data-file-action="view"
+                >이용확인서 보기</button>
+                <button
+                  type="button"
+                  class="button-secondary"
+                  data-download-bucket="usage-reports"
+                  data-download-path="${escapeHtml(latestReport.file_path)}"
+                  data-download-name="${escapeHtml(reportDownloadName)}"
+                  data-file-action="download"
                 >이용확인서 다운로드</button>
                 ${latestReport.review_status !== "approved"
                   ? `
