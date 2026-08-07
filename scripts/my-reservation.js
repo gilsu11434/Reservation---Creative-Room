@@ -149,10 +149,11 @@ function getLatestReport(reports) {
   )[0] ?? null;
 }
 
-function sanitizeFilePart(value, fallback = "미입력") {
+function sanitizeStoragePart(value, fallback = "file") {
   const sanitized = String(value ?? "")
     .trim()
-    .replace(/[\\/:*?"<>|#%]+/g, "")
+    .normalize("NFKD")
+    .replace(/[^a-zA-Z0-9_-]+/g, "")
     .replace(/\s+/g, "_")
     .slice(0, 60);
 
@@ -490,8 +491,8 @@ function attachEventListeners() {
           getExtension(file.name);
 
         const storedFileName =
-          `수료증_${sanitizeFilePart(memberName)}_` +
-          `${sanitizeFilePart(studentId)}_${Date.now()}.${extension}`;
+          `certificate_${sanitizeStoragePart(studentId)}_` +
+          `${Date.now()}.${extension}`;
 
         const path =
           `${currentUser.id}/` +
@@ -560,8 +561,8 @@ function attachEventListeners() {
 
         const extension = getExtension(file.name);
         const storedFileName =
-          `수료증_${sanitizeFilePart(memberName)}_` +
-          `${sanitizeFilePart(studentId)}_${Date.now()}.${extension}`;
+          `certificate_${sanitizeStoragePart(studentId)}_` +
+          `${Date.now()}.${extension}`;
         const path =
           `${currentUser.id}/` +
           `${reservationId}/` +
@@ -654,8 +655,7 @@ function attachEventListeners() {
           getExtension(file.name);
 
         const storedFileName =
-          `이용확인서_${sanitizeFilePart(reservation.requester_name)}_` +
-          `${formatFileDate(reservation.start_at)}_` +
+          `usage_report_${formatFileDate(reservation.start_at)}_` +
           `${Date.now()}.${extension}`;
 
         const path =
