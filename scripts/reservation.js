@@ -918,7 +918,7 @@ async function loadBookedSlots() {
   to.setDate(to.getDate() + 15);
 
   const { data, error } = await supabase.rpc(
-    "get_booked_slots",
+    "get_reservation_blocked_slots",
     {
       p_from: from.toISOString(),
       p_to: to.toISOString()
@@ -1009,8 +1009,13 @@ document
     const endTime =
       document.getElementById("end-time").value;
 
-    if (!date || !startTime || !endTime) {
-      message.textContent = "예약 날짜와 이용 시간을 선택해 주세요.";
+    const graduationProfessor =
+      document.getElementById("graduation-professor")
+        .value.trim();
+
+    if (!date || !startTime || !endTime || !graduationProfessor) {
+      message.textContent =
+        "예약 날짜, 이용 시간, 졸업작품 담당 교수님을 모두 입력해 주세요.";
       message.classList.remove("success");
       message.classList.add("error");
       return;
@@ -1198,6 +1203,25 @@ document
       return;
     }
 
+    const { error: professorError } = await supabase.rpc(
+      "set_my_reservation_professor",
+      {
+        p_reservation_id: String(reservationId),
+        p_graduation_professor: graduationProfessor
+      }
+    );
+
+    if (professorError) {
+      await supabase.rpc("cancel_my_reservation", {
+        p_reservation_id: reservationId
+      });
+
+      message.textContent =
+        `담당 교수님 저장 오류: ${professorError.message}`;
+      message.classList.add("error");
+      return;
+    }
+
     const { error: memberError } = await supabase.rpc(
       "save_verified_reservation_participants",
       {
@@ -1220,7 +1244,7 @@ document
     }
 
     message.textContent =
-      `예약이 완료되었습니다. 예약번호: ${reservationId}`;
+      `예약 신청이 접수되었습니다. 관리자 승인 대기 중입니다. 예약번호: ${reservationId}`;
     message.classList.remove("error");
     message.classList.add("success");
 

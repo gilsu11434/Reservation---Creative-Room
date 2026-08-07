@@ -1414,9 +1414,16 @@ input[type="file"]::file-selector-button {
   margin-bottom: 0;
 }
 
+.reservation-status-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
 .reservation-meta {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin: 18px 0;
 }
@@ -1511,6 +1518,22 @@ input[type="file"]::file-selector-button {
 
 .participant-upload-row form {
   gap: 8px;
+}
+
+.workflow-state-note,
+.workflow-status-description,
+.workflow-review-note {
+  display: block;
+  padding: 10px 11px;
+  border-radius: 9px;
+  color: var(--text-soft);
+  background: var(--surface-soft);
+  font-size: 12px;
+}
+
+.workflow-review-note {
+  color: var(--danger-dark);
+  background: #fff4f3;
 }
 
 .reservation-actions {
@@ -1916,6 +1939,15 @@ input[type="file"]::file-selector-button {
   font-weight: 800;
 }
 
+.calendar-approval-status {
+  width: max-content;
+  margin-top: 3px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
 .modal-open {
   overflow: hidden;
 }
@@ -2090,6 +2122,46 @@ input[type="file"]::file-selector-button {
   color: var(--text-soft);
   background: var(--surface-soft);
   text-align: center;
+}
+
+.admin-review-note {
+  margin: 12px 0 0;
+  padding: 11px 12px;
+  border-radius: 10px;
+  color: var(--text-soft);
+  background: var(--surface-soft);
+  font-size: 13px;
+}
+
+.admin-document-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+.admin-download-button {
+  min-height: 32px;
+  padding: 6px 9px;
+  font-size: 11px;
+}
+
+.admin-report-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-document-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-document-toolbar button {
+  min-height: 38px;
+  padding: 8px 12px;
+  font-size: 13px;
 }
 
 .admin-participant-table-wrap {
@@ -2543,6 +2615,19 @@ input[type="file"]::file-selector-button {
   .reservation-heading,
   .user-summary {
     align-items: flex-start;
+  }
+
+  .reservation-status-group {
+    justify-content: flex-start;
+  }
+
+  .admin-document-toolbar {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .admin-document-toolbar button {
+    width: 100%;
   }
 
   .document-row {
