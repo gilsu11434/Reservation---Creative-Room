@@ -26,8 +26,10 @@
 9. 관리자 예약 상세화면에서 참여자 정보를 확인하려면 `supabase-admin-reservation-details.sql` 전체를 한 번 실행합니다.
 10. 건의사항 게시판을 사용하려면 `supabase-suggestions.sql` 전체를 한 번 실행합니다.
     제목과 가운데가 `*`로 가려진 작성자는 공개되며 본문은 관리자 계정만 조회할 수 있습니다.
-11. `scripts/config.js`의 Supabase URL과 Publishable Key가 현재 프로젝트 값인지 확인합니다.
-12. VS Code에서 `index.html`을 열고 Live Server를 실행합니다.
+11. 수료증과 이용확인서 업로드를 위해 `supabase-storage-buckets.sql` 전체를 한 번 실행합니다.
+    실행 후 Storage에 `safety-certificates`, `usage-reports` Bucket이 생성되었는지 확인합니다.
+12. `scripts/config.js`의 Supabase URL과 Publishable Key가 현재 프로젝트 값인지 확인합니다.
+13. VS Code에서 `index.html`을 열고 Live Server를 실행합니다.
 
 신규 회원은 가입한 이메일로 로그인합니다. 기존 학번 기반 계정도 `profiles.email`에 저장된 이메일로 로그인할 수 있습니다.
 
