@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="창의융합프로젝트실 온라인 예약 신청">
   <title>호실 예약 - 창의융합프로젝트실</title>
-  <link rel="stylesheet" href="./styles/style.css?v=20260806-full-width-reservation">
+  <link rel="stylesheet" href="./styles/style.css?v=20260807-reservation-rules">
 </head>
 <body>
   <header class="app-header">
@@ -239,6 +239,29 @@
               <input id="rules-agreed" type="checkbox" required>
               <span>이용수칙과 파손·분실 책임 규정을 확인하고 동의합니다.</span>
             </label>
+
+            <section
+              class="reservation-rules-notice field-full"
+              aria-labelledby="reservation-rules-title"
+            >
+              <div class="reservation-rules-heading">
+                <span class="reservation-rules-icon" aria-hidden="true">!</span>
+                <div>
+                  <h3 id="reservation-rules-title">이용수칙 안내</h3>
+                  <p>예약 신청 전 모든 참여자가 아래 내용을 확인해 주세요.</p>
+                </div>
+              </div>
+
+              <ul class="reservation-rules-list">
+                <li>예약은 평일 10:00부터 18:00까지 정각 단위로 이용할 수 있습니다.</li>
+                <li>예약은 내일부터 14일 이내만 가능하며 토요일과 일요일은 이용할 수 없습니다.</li>
+                <li>모든 참여자는 가입된 이메일을 입력해야 하며, 참여자별 하루 최대 2시간·일주일 최대 4시간까지 이용할 수 있습니다.</li>
+                <li>이용 전 참여자의 안전교육 수료증을 제출하고, 이용 후에는 이용확인서를 제출해 주세요.</li>
+                <li>사용한 장비의 전원을 종료하고 주변을 정리한 후 퇴실해 주세요.</li>
+                <li>시설물과 장비를 허가 없이 이동할 수 없으며 음식물 반입은 금지됩니다.</li>
+                <li>시설물의 파손이나 분실을 발견하면 즉시 관리자에게 알려야 하며, 이용 중 발생한 파손·분실은 이용자에게 책임이 있을 수 있습니다.</li>
+              </ul>
+            </section>
           </div>
 
           <div class="form-actions">
