@@ -58,7 +58,10 @@ async function loadReservations() {
     const hasCompleteParticipantInfo =
       members.length === Number(reservation.headcount);
 
-    return hasCompleteParticipantInfo;
+    return (
+      reservation.status !== "cancelled" &&
+      hasCompleteParticipantInfo
+    );
   });
   renderReservations();
 }
