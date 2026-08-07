@@ -297,8 +297,16 @@ function getReportStatusInfo(status) {
   return statuses[status] ?? statuses.pending;
 }
 
+function normalizeRelatedRows(value) {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  return value ? [value] : [];
+}
+
 function getLatestReport(reports) {
-  return [...(reports ?? [])].sort(
+  return normalizeRelatedRows(reports).sort(
     (first, second) =>
       new Date(second.created_at ?? 0) -
       new Date(first.created_at ?? 0)

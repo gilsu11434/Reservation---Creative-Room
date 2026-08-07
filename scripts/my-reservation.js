@@ -22,6 +22,9 @@ async function initialize() {
 }
 
 async function loadReservations() {
+  const container =
+    document.getElementById("reservation-list");
+
   const { data, error } = await supabase
     .from("reservations")
     .select(`
@@ -36,7 +39,17 @@ async function loadReservations() {
     });
 
   if (error) {
-    alert(error.message);
+    container.innerHTML = `
+      <section class="card">
+        <h2>예약 정보를 불러오지 못했습니다</h2>
+        <p class="form-message error">${escapeHtml(error.message)}</p>
+        <button type="button" class="reload-reservations-button">다시 불러오기</button>
+      </section>
+    `;
+
+    container
+      .querySelector(".reload-reservations-button")
+      ?.addEventListener("click", loadReservations);
     return;
   }
 
@@ -117,8 +130,16 @@ function getReportStatusInfo(status) {
   return statuses[status] ?? statuses.pending;
 }
 
+function normalizeRelatedRows(value) {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  return value ? [value] : [];
+}
+
 function getLatestReport(reports) {
-  return [...reports].sort(
+  return normalizeRelatedRows(reports).sort(
     (first, second) =>
       new Date(second.created_at ?? 0) -
       new Date(first.created_at ?? 0)
@@ -182,8 +203,9 @@ function renderReservations() {
         (member) => Boolean(member.safety_certificate_path)
       ).length;
 
-      const reports =
-        reservation.usage_reports ?? [];
+      const reports = normalizeRelatedRows(
+        reservation.usage_reports
+      );
 
       const latestReport = getLatestReport(reports);
       const reportStatus = latestReport
@@ -690,4 +712,16 @@ function attachEventListeners() {
     });
 }
 
-initialize();
+initialize().catch((error) => {
+  const container =
+    document.getElementById("reservation-list");
+
+  console.error(error);
+  container.innerHTML = `
+    <section class="card">
+      <h2>예약 화면 실행 오류</h2>
+      <p class="form-message error">${escapeHtml(error.message)}</p>
+      <button type="button" onclick="window.location.reload()">페이지 새로고침</button>
+    </section>
+  `;
+});
